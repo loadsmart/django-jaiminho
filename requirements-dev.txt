@@ -1,0 +1,7 @@
+# Development requirements for Python 3.X
+# For package requirements, please see setup.py
+
+pytest==6.2.4
+pytest-cov==2.12.0
+tox==3.23.1
+wheel==0.36.2
