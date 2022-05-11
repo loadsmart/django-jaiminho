@@ -1,0 +1,3 @@
+awscli==1.16.174
+Sphinx==2.1.0
+sphinx-rtd-theme==0.4.3

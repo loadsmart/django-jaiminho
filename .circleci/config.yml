@@ -1,0 +1,127 @@
+version: 2.1
+
+commands:
+  install-dependencies:
+    steps:
+      - run:
+          command: |
+            sudo pip install tox coveralls[yaml]
+  upload-coverage:
+    parameters:
+      pyversion:
+        type: string
+        description: Python version
+    steps:
+      - run:
+          command: |
+            coveralls
+
+jobs:
+  tests36:
+    working_directory: /home/circleci/project
+    docker:
+      - image: circleci/python:3.6-stretch
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py36
+      - upload-coverage:
+          pyversion: py36
+      - store_test_results:
+          path: build
+  tests37:
+    working_directory: /home/circleci/project
+    docker:
+      - image: circleci/python:3.7-stretch
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py37
+      - upload-coverage:
+          pyversion: py37
+      - store_test_results:
+          path: build
+  tests38:
+    working_directory: /home/circleci/project
+    docker:
+      - image: circleci/python:3.8.1-buster
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py38
+      - upload-coverage:
+          pyversion: py38
+      - store_test_results:
+          path: build
+  tests39:
+    working_directory: /home/circleci/project
+    docker:
+      - image: circleci/python:3.9.4-buster
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py39
+      - upload-coverage:
+          pyversion: py39
+      - store_test_results:
+          path: build
+  release:
+    working_directory: /home/circleci/project
+    docker:
+      - image: circleci/python:3.7-stretch
+    steps:
+      - checkout
+      - run:
+          command: make release
+  publish-docs:
+    docker:
+      - image: cimg/python:3.9.6
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            pip install awscli sphinx_rtd_theme sphinx
+
+      - run:
+          name: publish docs
+          command: |
+            cd docs && make publish
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - tests36:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - tests37:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - tests38:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - tests39:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - publish-docs:
+          context: org-global
+          filters:
+            branches:
+              only: /master/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
