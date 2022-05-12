@@ -5,7 +5,7 @@
 
 Python library which implement outbox and other message resilence patterns.
 
-![alt text](https://github.com/[username]/[reponame]/blob/[branch]/images/jaiminho.jpg?raw=true)
+![Jaiminho](https://github.com/loadsmart/jaiminho/blob/master/docs/images/jaiminho.jpg?raw=true)
 
 ## Installation
 
