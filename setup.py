@@ -39,8 +39,11 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    packages=find_packages(exclude=["docs", "tests"]),
+    packages=find_packages(exclude=["docs", "tests", "jaiminho_django_project"]),
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4",
+    install_requires=[
+        "Django"
+    ],
     project_urls={
         "Documentation": "https://docs.loadsmart.io/jaiminho",
         "Source": "https://github.com/loadsmart/jaiminho",

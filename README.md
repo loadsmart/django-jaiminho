@@ -15,11 +15,22 @@ Install it from our private PyPI repository. Make sure you have the `PIP_EXTRA_I
 python -m pip install jaiminho
 ```
 
+Add `jaiminho` in the `INSTALLED_APPS` section of your Django app
+
 ## Usage
 
-TODO: Add some instructions on how to use the package.
-
 Detailed documentation is available at https://docs.loadsmart.io/jaiminho/latest/index.html
+
+## Development
+
+Create a virtualenv
+
+```bash
+virtualenv venv
+pip install -r requirements-dev.txt
+tox -e py39
+```
+
 
 ## License
 
