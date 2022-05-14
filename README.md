@@ -14,9 +14,20 @@ Python library which implement outbox and other message resilence patterns.
 python -m pip install jaiminho
 ```
 
+Add `jaiminho` in the `INSTALLED_APPS` section of your Django app
+
 ## Usage
 
-TODO: Add some instructions on how to use the package.
+
+## Development
+
+Create a virtualenv
+
+```bash
+virtualenv venv
+pip install -r requirements-dev.txt
+tox -e py39
+```
 
 
 ## License
