@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class JaiminhoConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'jaiminho'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "jaiminho"
