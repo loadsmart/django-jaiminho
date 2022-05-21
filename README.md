@@ -18,6 +18,22 @@ Add `jaiminho` in the `INSTALLED_APPS` section of your Django app
 
 ## Usage
 
+Configure jaiminho options in Django settings.py:
+```python
+
+# JAIMINHO
+
+JAIMINHO_CONFIG = {
+    "PERSIST_ALL_EVENTS": False
+    "SEND_EVENT_FUNCTION": "jaiminho_django_project.send.send",
+}
+
+```
+### Configuration options
+
+- PERSIST_ALL_EVENTS - Saves all events and not only the ones that fail
+- SEND_EVENT_FUNCTION - Function with foo(payload:dict) signature that will send the event and raise an exception if failed.
+
 
 ## Development
 
