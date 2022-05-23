@@ -1,28 +1,39 @@
 import logging
-import inspect
 from functools import wraps
 
 from django.utils import timezone
 
 from jaiminho.models import Event
+from jaiminho.kwargs_handler import format_kwargs
 from jaiminho import settings
 
 logger = logging.getLogger(__name__)
 
-EXPECTED_PARAMETERS = {"type", "action", "payload"}
-
 
 def save_to_outbox(func):
-    assert set(inspect.signature(func).parameters) == EXPECTED_PARAMETERS
-
     @wraps(func)
-    def inner(type, action, payload):
+    def inner(payload, **kwargs):
+        type = payload.get("type")
+        action = payload.get("action")
+        options = format_kwargs(**kwargs)
         try:
-            result = func(type, action, payload)
+            result = func(payload, **kwargs)
             if settings.persist_all_events:
-                Event.objects.create(type=type, action=action, payload=payload, sent_at=timezone.now())
+                Event.objects.create(
+                    type=type,
+                    action=action,
+                    payload=payload,
+                    sent_at=timezone.now(),
+                    options=options,
+                )
         except Exception:
-            Event.objects.create(type=type, action=action, payload=payload)
+            Event.objects.create(
+                type=type,
+                action=action,
+                payload=payload,
+                options=options,
+            )
             raise
         return result
+
     return inner
