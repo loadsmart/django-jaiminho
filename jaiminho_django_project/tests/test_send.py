@@ -61,7 +61,6 @@ def test_send_with_parameters(mock_internal_notify_fail, encoder):
     assert Event.objects.all().count() == 1
     event = Event.objects.first()
     assert event.sent_at is None
-    assert (
-        event.options
-        == "jaiminho_django_project.tests.test_send.Encoder encoder=NotUsed"
-    )
+    assert event.options == ""
+    assert event.encoder == "jaiminho_django_project.tests.test_send.Encoder"
+    assert event.function_signature == "jaiminho_django_project.send.notify"
