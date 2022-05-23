@@ -19,6 +19,24 @@ Add `jaiminho` in the `INSTALLED_APPS` section of your Django app
 
 ## Usage
 
+Configure jaiminho options in Django settings.py:
+```python
+
+# JAIMINHO
+
+JAIMINHO_CONFIG = {
+    "PERSIST_ALL_EVENTS": False
+    }
+
+```
+
+
+
+### Configuration options
+
+- PERSIST_ALL_EVENTS - Saves all events and not only the ones that fail, default is False
+- DEFAULT_ENCODER - Default Encoder for the payload (overwritable in the function call)
+
 Detailed documentation is available at https://docs.loadsmart.io/jaiminho/latest/index.html
 
 ## Development
