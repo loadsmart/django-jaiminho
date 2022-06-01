@@ -17,6 +17,16 @@ def mock_internal_notify_fail(mocker):
     return mock
 
 
+@pytest.fixture
+def mock_event_published_signal(mocker):
+    return mocker.patch("jaiminho.send.event_published.send")
+
+
+@pytest.fixture
+def mock_event_failed_to_publish_signal(mocker):
+    return mocker.patch("jaiminho.send.event_failed_to_publish.send")
+
+
 @pytest.mark.parametrize(
     ("persist_all_events", "events_count"),
     (
@@ -41,6 +51,17 @@ def test_send_fail(mock_internal_notify_fail, mocker, persist_all_events):
     )
     assert Event.objects.all().count() == 1
     assert Event.objects.first().sent_at is None
+
+
+def test_send_trigger_event_published_signal(mock_internal_notify, mock_event_published_signal):
+    jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
+    mock_event_published_signal.assert_called_once()
+
+
+def test_send_trigger_event_failed_to_publish_signal(mock_internal_notify_fail, mock_event_failed_to_publish_signal):
+    with pytest.raises(Exception):
+        jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
+        mock_event_failed_to_publish_signal.assert_called_once()
 
 
 # we need this in the globals so we don't need to mock A LOT of things
