@@ -39,6 +39,34 @@ JAIMINHO_CONFIG = {
 
 Detailed documentation is available at https://docs.loadsmart.io/jaiminho/latest/index.html
 
+### Signals
+
+Jaiminho triggers the following Django signals:
+
+| Signal                  | Descriptiopn                                                                   |
+|-------------------------|--------------------------------------------------------------------------------|
+| event_published         | Triggered when an event is sent successfully                                   |
+| event_failed_to_publish | Triggered when an event failed to be send and it's enqueue to the Outbox table |
+
+
+### How to collect metrics from Jaiminho?
+
+You could use the Django signals triggered by Jaiminho to collect metrics. 
+Consider the following code as example:
+
+````python
+from django.dispatch import receiver
+
+@receiver(event_published)
+def on_event_sent(sender, **kwargs):
+    metrics.count("event_sent_successfully")
+
+@receiver(event_failed_to_publish)
+def on_event_send_error(sender, **kwargs):
+    metrics.count("event_failed")
+
+````
+
 ## Development
 
 Create a virtualenv
