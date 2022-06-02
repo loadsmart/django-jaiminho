@@ -37,6 +37,34 @@ JAIMINHO_CONFIG = {
 - DEFAULT_ENCODER - Default Encoder for the payload (overwritable in the function call)
 
 
+### Signals
+
+Jaiminho triggers the following Django signals:
+
+| Signal                  | Descriptiopn                                                                   |
+|-------------------------|--------------------------------------------------------------------------------|
+| event_published         | Triggered when an event is sent successfully                                   |
+| event_failed_to_publish | Triggered when an event failed to be send and it's enqueue to the Outbox table |
+
+
+### How to collect metrics from Jaiminho?
+
+You could use the Django signals triggered by Jaiminho to collect metrics. 
+Consider the following code as example:
+
+````python
+from django.dispatch import receiver
+
+@receiver(event_published)
+def on_event_sent(sender, event_payload, **kwargs):
+    metrics.count(f"event_sent_successfully {event_payload.get('type')}")
+
+@receiver(event_failed_to_publish)
+def on_event_send_error(sender, event_payload, **kwargs):
+    metrics.count(f"event_failed {event_payload.get('type')}")
+
+````
+
 ## Development
 
 Create a virtualenv
