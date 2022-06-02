@@ -34,7 +34,7 @@ def save_to_outbox(func):
                     options=options,
                 )
         except Exception:
-            event = Event.objects.create(
+            Event.objects.create(
                 type=type,
                 action=action,
                 payload=payload,
@@ -42,7 +42,7 @@ def save_to_outbox(func):
                 function_signature=func_signature,
                 options=options,
             )
-            event_failed_to_publish.send(sender=func, instance=event)
+            event_failed_to_publish.send(sender=func, instance=payload)
             raise
         return result
 
