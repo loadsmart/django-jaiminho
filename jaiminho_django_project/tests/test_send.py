@@ -1,9 +1,9 @@
 from datetime import datetime
 
 import pytest
+from dateutil.tz import UTC
 from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
-from pytz import UTC
 
 from jaiminho.models import Event
 import jaiminho_django_project.send
