@@ -1,4 +1,10 @@
+from datetime import datetime
+
 import pytest
+from django.core.serializers.json import DjangoJSONEncoder
+from freezegun import freeze_time
+from pytz import UTC
+
 from jaiminho.models import Event
 import jaiminho_django_project.send
 
@@ -37,8 +43,26 @@ def mock_event_failed_to_publish_signal(mocker):
 def test_send_success(mock_internal_notify, mocker, persist_all_events, events_count):
     mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
     jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
-    mock_internal_notify.assert_called_once_with({"action": "a", "type": "t", "c": "d"})
+    mock_internal_notify.assert_called_once_with(
+        {"action": "a", "type": "t", "c": "d"}, encoder=DjangoJSONEncoder
+    )
     assert Event.objects.all().count() == events_count
+
+
+def test_send_success_with_encoder(mock_internal_notify, mocker):
+    mocker.patch("jaiminho.send.settings.persist_all_events", True)
+    payload = {"action": "a", "type": "t", "c": "d"}
+
+    with freeze_time("2022-01-01"):
+        jaiminho_django_project.send.notify(payload)
+
+    mock_internal_notify.assert_called_once_with(payload, encoder=DjangoJSONEncoder)
+    assert Event.objects.all().count() == 1
+    event = Event.objects.first()
+    assert event.sent_at == datetime(2022, 1, 1, tzinfo=UTC)
+    assert event.options == ""
+    assert event.encoder == "django.core.serializers.json.DjangoJSONEncoder"
+    assert event.function_signature == "jaiminho_django_project.send.notify"
 
 
 @pytest.mark.parametrize(("persist_all_events"), (False, True))
@@ -47,18 +71,22 @@ def test_send_fail(mock_internal_notify_fail, mocker, persist_all_events):
     with pytest.raises(Exception):
         jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
     mock_internal_notify_fail.assert_called_once_with(
-        {"action": "a", "type": "t", "c": "d"}
+        {"action": "a", "type": "t", "c": "d"}, encoder=DjangoJSONEncoder
     )
     assert Event.objects.all().count() == 1
     assert Event.objects.first().sent_at is None
 
 
-def test_send_trigger_event_published_signal(mock_internal_notify, mock_event_published_signal):
+def test_send_trigger_event_published_signal(
+    mock_internal_notify, mock_event_published_signal
+):
     jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
     mock_event_published_signal.assert_called_once()
 
 
-def test_send_trigger_event_failed_to_publish_signal(mock_internal_notify_fail, mock_event_failed_to_publish_signal):
+def test_send_trigger_event_failed_to_publish_signal(
+    mock_internal_notify_fail, mock_event_failed_to_publish_signal
+):
     with pytest.raises(Exception):
         jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
         mock_event_failed_to_publish_signal.assert_called_once()
@@ -84,4 +112,19 @@ def test_send_with_parameters(mock_internal_notify_fail, encoder):
     assert event.sent_at is None
     assert event.options == ""
     assert event.encoder == "jaiminho_django_project.tests.test_send.Encoder"
+    assert event.function_signature == "jaiminho_django_project.send.notify"
+
+
+def test_send_fail_with_encoder_default(mock_internal_notify_fail):
+    payload = {"action": "a", "type": "t", "c": "d"}
+
+    with pytest.raises(Exception):
+        jaiminho_django_project.send.notify(payload)
+
+    mock_internal_notify_fail.assert_called_with(payload, encoder=DjangoJSONEncoder)
+    assert Event.objects.all().count() == 1
+    event = Event.objects.first()
+    assert event.sent_at is None
+    assert event.options == ""
+    assert event.encoder == "django.core.serializers.json.DjangoJSONEncoder"
     assert event.function_signature == "jaiminho_django_project.send.notify"
