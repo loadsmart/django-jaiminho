@@ -1,3 +1,3 @@
 __all__ = ("RelayEventsCommand",)
 
-from jaiminho.management.relay_events import RelayEventsCommand
+from jaiminho.management.events_relay import RelayEventsCommand
