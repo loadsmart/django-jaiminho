@@ -33,7 +33,7 @@ class RelayEventsCommand(BaseCommand):
                 event.save()
 
             except (ModuleNotFoundError, AttributeError) as e:
-                log.warning("Function does not exist anymore %s", e)
+                log.warning("Function does not exist anymore: %s", str(e))
                 self.capture_exception_fn(e)
 
             except Exception as e:
