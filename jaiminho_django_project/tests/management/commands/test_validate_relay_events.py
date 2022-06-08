@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest import mock
 from unittest.mock import call
 
 import pytest
@@ -8,6 +9,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 
 from jaiminho.kwargs_handler import format_kwargs
+from jaiminho.management.relay_events import RelayEventsCommand
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.core.management.commands import validate_relay_events
@@ -55,6 +57,24 @@ class TestValidateRelayEvents:
             sent_at=datetime(2022, 2, 19, tzinfo=UTC),
         )
 
+    @pytest.fixture
+    def mock_capture_exception_fn(self):
+        return mock.Mock()
+
+    @pytest.fixture
+    def command_without_capture_exception_fn(self):
+        class WithoutCaptureExceptionFn(RelayEventsCommand):
+            capture_exception_fn = None
+
+        return WithoutCaptureExceptionFn
+
+    @pytest.fixture
+    def command_with_custom_capture_exception(self, mock_capture_exception_fn):
+        class WithCustomCaptureException(RelayEventsCommand):
+            capture_exception_fn = mock_capture_exception_fn
+
+        return WithCustomCaptureException
+
     def test_relay_failed_event(self, failed_event, mock_internal_notify):
         with freeze_time("2022-10-31"):
             call_command(validate_relay_events.Command())
@@ -75,7 +95,7 @@ class TestValidateRelayEvents:
 
         call_command(validate_relay_events.Command())
 
-        mock_log_info.assert_called_with("No failed messages found.")
+        mock_log_info.assert_called_with("No failed events found.")
         assert Event.objects.all().count() == 1
 
     def test_relay_events_ordered_by_created_by(self, mock_internal_notify):
@@ -147,7 +167,7 @@ class TestValidateRelayEvents:
         mock_log_warning.assert_called_once()
         mock_calls = mock_log_warning.call_args[0]
         assert "Function does not exist anymore" in mock_calls[0]
-        assert "No module named jaiminho_django_project.missing_module" in mock_calls[1]
+        assert "No module named 'jaiminho_django_project.missing_module'" in mock_calls[1]
 
     def test_raise_exception_when_function_does_not_exist_anymore(
         self, mock_log_warning
@@ -166,3 +186,25 @@ class TestValidateRelayEvents:
             "'jaiminho_django_project.send' has no attribute 'missing_notify'"
             in mock_calls[1]
         )
+
+    def test_works_fine_without_capture_exception_fn(
+        self,
+        failed_event,
+        command_without_capture_exception_fn,
+        mock_internal_notify_fail,
+    ):
+        call_command(command_without_capture_exception_fn())
+
+        mock_internal_notify_fail.assert_called_once()
+
+    def test_works_with_custom_capture_exception_fn(
+        self,
+        failed_event,
+        mock_capture_exception_fn,
+        command_with_custom_capture_exception,
+        mock_internal_notify_fail,
+    ):
+        call_command(command_with_custom_capture_exception())
+
+        mock_internal_notify_fail.assert_called_once()
+        mock_capture_exception_fn.assert_called_once()

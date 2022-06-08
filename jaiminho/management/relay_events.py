@@ -20,7 +20,7 @@ class RelayEventsCommand(BaseCommand):
         )
 
         if not failed_events:
-            log.info("No failed messages found.")
+            log.info("No failed events found.")
             return
 
         for event in failed_events:
