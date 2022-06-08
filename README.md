@@ -67,6 +67,13 @@ def on_event_send_error(sender, event_payload, **kwargs):
 
 ````
 
+### How to clean older events
+
+You can use Jaiminho's [EventCleanerCommand](https://github.com/loadsmart/jaiminho/tree/master/jaiminho/management/event_cleaner.py) in order to do that. It will query for all events that were sent before a given time interval (e.g. last 5 days) and will delete them from the outbox table.
+
+This command requires the `TIME_TO_DELETE` configuration to be added to `JAIMINHO_CONFIG`, which must be a valid [timedelta](https://docs.python.org/3/library/datetime.html#timedelta-objects).
+
+
 ## Development
 
 Create a virtualenv

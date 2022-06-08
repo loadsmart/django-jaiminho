@@ -4,7 +4,6 @@ from datetime import timedelta
 from django.core.management import call_command
 from django.utils import timezone
 
-from jaiminho.management import EventCleanerCommand
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.core.management.commands import validate_event_cleaner
