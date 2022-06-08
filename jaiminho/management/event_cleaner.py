@@ -22,11 +22,10 @@ class EventCleanerCommand(BaseCommand):
             sent_at__lt=deletion_threshold_timestamp
         )
 
-        if not events_to_delete:
+        if events_to_delete.count() == 0:
             logger.info("Did not found events to be deleted. Finishing execution...")
             return
 
-        for event in events_to_delete:
-            event.delete()
+        events_to_delete.delete()
 
         logger.info("Successfully deleted %s events", len(events_to_delete))
