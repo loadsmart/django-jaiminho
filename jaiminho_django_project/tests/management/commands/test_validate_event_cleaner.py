@@ -1,11 +1,13 @@
 import pytest
 
 from datetime import timedelta
+from django.core.management import call_command
 from django.utils import timezone
 
 from jaiminho.management import EventCleanerCommand
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
+from jaiminho_django_project.core.management.commands import validate_event_cleaner
 
 pytestmark = pytest.mark.django_db
 
@@ -36,7 +38,7 @@ class TestEventCleanerCommand:
         assert len(Event.objects.all()) == 6
 
         with pytest.raises(AssertionError):
-            EventCleanerCommand().handle()
+            call_command(validate_event_cleaner.Command())
 
         assert len(Event.objects.all()) == 6
 
@@ -48,7 +50,7 @@ class TestEventCleanerCommand:
         assert len(Event.objects.all()) == 6
 
         with pytest.raises(AssertionError):
-            EventCleanerCommand().handle()
+            call_command(validate_event_cleaner.Command())
 
         assert len(Event.objects.all()) == 6
 
@@ -58,7 +60,7 @@ class TestEventCleanerCommand:
         mocker.patch("jaiminho.send.settings.time_to_delete", self.TIME_TO_DELETE)
 
         assert len(Event.objects.all()) == 6
-        EventCleanerCommand().handle()
+        call_command(validate_event_cleaner.Command())
 
         remaining_events = Event.objects.all()
         assert len(remaining_events) == 4
@@ -70,5 +72,5 @@ class TestEventCleanerCommand:
         mocker.patch("jaiminho.send.settings.time_to_delete", self.TIME_TO_DELETE)
 
         assert len(Event.objects.all()) == 4
-        EventCleanerCommand().handle()
+        call_command(validate_event_cleaner.Command())
         assert len(Event.objects.all()) == 4
