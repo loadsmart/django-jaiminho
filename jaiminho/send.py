@@ -17,19 +17,21 @@ def save_to_outbox(func):
 
     @wraps(func)
     def inner(payload, encoder=None, **kwargs):
+        if encoder is None:
+            encoder = settings.default_encoder
         type = payload.get("type")
         action = payload.get("action")
         options = format_kwargs(**kwargs)
-        encoder = format_func_path(encoder)
+        encoder_path = format_func_path(encoder)
         try:
-            result = func(payload, **kwargs)
+            result = func(payload, encoder=encoder, **kwargs)
             event_published.send(sender=func, instance=payload)
             if settings.persist_all_events:
                 Event.objects.create(
                     type=type,
                     action=action,
                     payload=payload,
-                    encoder=encoder,
+                    encoder=encoder_path,
                     sent_at=timezone.now(),
                     function_signature=func_signature,
                     options=options,
@@ -39,12 +41,13 @@ def save_to_outbox(func):
                 type=type,
                 action=action,
                 payload=payload,
-                encoder=encoder,
+                encoder=encoder_path,
                 function_signature=func_signature,
                 options=options,
             )
             event_failed_to_publish.send(sender=func, instance=payload)
             raise
         return result
+
     inner.original_func = func
     return inner
