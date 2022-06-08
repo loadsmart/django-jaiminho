@@ -1,5 +1,3 @@
-
-
 def foo():
     return True
 
