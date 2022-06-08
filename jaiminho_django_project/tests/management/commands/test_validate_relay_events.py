@@ -26,7 +26,9 @@ class TestValidateRelayEvents:
 
     @pytest.fixture
     def mock_capture_exception(self, mocker):
-        return mocker.patch("sentry_sdk.api.capture_exception")
+        return mocker.patch(
+            "jaiminho_django_project.core.management.commands.validate_relay_events.Command.capture_exception_fn"
+        )
 
     @pytest.fixture
     def mock_internal_notify(self, mocker):
@@ -80,11 +82,23 @@ class TestValidateRelayEvents:
         function_signature = "jaiminho_django_project.send.notify"
         encoder = "django.core.serializers.json.DjangoJSONEncoder"
         with freeze_time("2022-01-03"):
-            event_1 = EventFactory(function_signature=function_signature, encoder=encoder, options=format_kwargs(a="1"))
+            event_1 = EventFactory(
+                function_signature=function_signature,
+                encoder=encoder,
+                options=format_kwargs(a="1"),
+            )
         with freeze_time("2022-01-01"):
-            event_2 = EventFactory(function_signature=function_signature, encoder=encoder, options=format_kwargs(a="2"))
+            event_2 = EventFactory(
+                function_signature=function_signature,
+                encoder=encoder,
+                options=format_kwargs(a="2"),
+            )
         with freeze_time("2022-01-02"):
-            event_3 = EventFactory(function_signature=function_signature, encoder=encoder, options=format_kwargs(a="3"))
+            event_3 = EventFactory(
+                function_signature=function_signature,
+                encoder=encoder,
+                options=format_kwargs(a="3"),
+            )
 
         call_command(validate_relay_events.Command())
 
@@ -115,9 +129,12 @@ class TestValidateRelayEvents:
     def test_dont_create_another_event_when_relay_fails(
         self, failed_event, mock_internal_notify_fail, mock_capture_exception
     ):
+        assert Event.objects.all().count() == 1
+
         call_command(validate_relay_events.Command())
 
         mock_capture_exception.assert_called_once()
+        assert Event.objects.all().count() == 1
 
     def test_raise_exception_when_module_does_not_exist_anymore(self, mock_log_warning):
         EventFactory(
@@ -132,7 +149,9 @@ class TestValidateRelayEvents:
         assert "Function does not exist anymore" in mock_calls[0]
         assert "No module named jaiminho_django_project.missing_module" in mock_calls[1]
 
-    def test_raise_exception_when_function_does_not_exist_anymore(self, mock_log_warning):
+    def test_raise_exception_when_function_does_not_exist_anymore(
+        self, mock_log_warning
+    ):
         EventFactory(
             function_signature="jaiminho_django_project.send.missing_notify",
             encoder="django.core.serializers.json.DjangoJSONEncoder",
@@ -143,4 +162,7 @@ class TestValidateRelayEvents:
         mock_log_warning.assert_called_once()
         mock_calls = mock_log_warning.call_args[0]
         assert "Function does not exist anymore" in mock_calls[0]
-        assert "'jaiminho_django_project.send' has no attribute 'missing_notify'" in mock_calls[1]
+        assert (
+            "'jaiminho_django_project.send' has no attribute 'missing_notify'"
+            in mock_calls[1]
+        )
