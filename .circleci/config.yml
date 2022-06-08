@@ -1,3 +1,6 @@
+tag-pattern: &tag-pattern
+  only: /^\d+\.\d+\.\d+$/
+
 version: 2.1
 
 commands:
@@ -77,6 +80,10 @@ jobs:
       - checkout
       - run:
           command: make release
+      - persist_to_workspace:
+          root: .
+          paths:
+            - "dist"
   publish-docs:
     docker:
       - image: cimg/python:3.9.6
@@ -123,5 +130,18 @@ workflows:
           filters:
             branches:
               only: /master/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - release:
+          name: release
+          context: org-global
+          requires:
+            - tests36
+            - tests37
+            - tests38
+            - tests39
+          filters:
+            branches:
+              ignore: /.*/
             tags:
               only: /^\d+\.\d+\.\d+$/
