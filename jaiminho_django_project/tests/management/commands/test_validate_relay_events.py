@@ -76,6 +76,8 @@ class TestValidateRelayEvents:
         return WithCustomCaptureException
 
     def test_relay_failed_event(self, failed_event, mock_internal_notify):
+        assert Event.objects.all().count() == 1
+
         with freeze_time("2022-10-31"):
             call_command(validate_relay_events.Command())
 
@@ -97,6 +99,28 @@ class TestValidateRelayEvents:
 
         mock_log_info.assert_called_with("No failed events found.")
         assert Event.objects.all().count() == 1
+
+    def test_relay_every_event_even_at_lest_one_fail(
+        self, mock_internal_notify_fail,
+    ):
+        function_signature = "jaiminho_django_project.send.notify"
+        encoder = "django.core.serializers.json.DjangoJSONEncoder"
+        event_1 = EventFactory(
+            function_signature=function_signature,
+            encoder=encoder,
+            options=format_kwargs(a="1"),
+        )
+        event_2 = EventFactory(
+            function_signature=function_signature,
+            encoder=encoder,
+            options=format_kwargs(a="2"),
+        )
+
+        call_command(validate_relay_events.Command())
+
+        call_1 = call(event_1.payload, encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(event_2.payload, encoder=DjangoJSONEncoder, a="2")
+        mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
 
     def test_relay_events_ordered_by_created_by(self, mock_internal_notify):
         function_signature = "jaiminho_django_project.send.notify"
