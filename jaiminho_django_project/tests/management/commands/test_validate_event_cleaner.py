@@ -31,15 +31,11 @@ class TestEventCleanerCommand:
     def not_sent_events(self):
         return EventFactory.create_batch(2, sent_at=None)
 
-    def test_command_without_time_to_delete_configuration_raises_error_and_doesnt_delete(
-        self, older_events, newer_events, not_sent_events
-    ):
-        assert len(Event.objects.all()) == 6
-
-        with pytest.raises(AssertionError):
-            call_command(validate_event_cleaner.Command())
-
-        assert len(Event.objects.all()) == 6
+    @pytest.fixture
+    def events_older_than_default_config(self):
+        return EventFactory.create_batch(
+            2, sent_at=timezone.now() - self.TIME_TO_DELETE - timedelta(days=30)
+        )
 
     def test_command_with_misconfigured_time_to_delete_raises_error_and_doesnt_delete(
         self, mocker, older_events, newer_events, not_sent_events
@@ -73,3 +69,19 @@ class TestEventCleanerCommand:
         assert len(Event.objects.all()) == 4
         call_command(validate_event_cleaner.Command())
         assert len(Event.objects.all()) == 4
+
+    def test_command_without_time_to_delete_configuration_uses_default_14_days(
+        self,
+        older_events,
+        newer_events,
+        not_sent_events,
+        events_older_than_default_config,
+    ):
+        assert len(Event.objects.all()) == 8
+        call_command(validate_event_cleaner.Command())
+
+        remaining_events = Event.objects.all()
+        assert set(remaining_events) == set(
+            [*older_events, *newer_events, *not_sent_events]
+        )
+        assert len(Event.objects.all()) == 6
