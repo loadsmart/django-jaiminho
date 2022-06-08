@@ -9,10 +9,10 @@ from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 
 from jaiminho.kwargs_handler import format_kwargs
-from jaiminho.management.events_relay import RelayEventsCommand
+from jaiminho.management.commands.events_relay import Command
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
-from jaiminho_django_project.core.management.commands import validate_events_relay
+from jaiminho_django_project.management.commands import validate_events_relay
 
 pytestmark = pytest.mark.django_db
 
@@ -20,16 +20,16 @@ pytestmark = pytest.mark.django_db
 class TestValidateEventsRelay:
     @pytest.fixture
     def mock_log_info(self, mocker):
-        return mocker.patch("jaiminho.management.events_relay.log.info")
+        return mocker.patch("jaiminho.management.commands.events_relay.log.info")
 
     @pytest.fixture
     def mock_log_warning(self, mocker):
-        return mocker.patch("jaiminho.management.events_relay.log.warning")
+        return mocker.patch("jaiminho.management.commands.events_relay.log.warning")
 
     @pytest.fixture
     def mock_capture_exception(self, mocker):
         return mocker.patch(
-            "jaiminho_django_project.core.management.commands.validate_events_relay.Command.capture_exception_fn"
+            "jaiminho_django_project.management.commands.validate_events_relay.Command.capture_exception_fn"
         )
 
     @pytest.fixture
@@ -45,13 +45,13 @@ class TestValidateEventsRelay:
     @pytest.fixture
     def mock_event_published_by_events_relay_signal(self, mocker):
         return mocker.patch(
-            "jaiminho.management.events_relay.event_published_by_events_relay.send"
+            "jaiminho.management.commands.events_relay.event_published_by_events_relay.send"
         )
 
     @pytest.fixture
     def mock_event_failed_to_publish_by_events_relay_signal(self, mocker):
         return mocker.patch(
-            "jaiminho.management.events_relay.event_failed_to_publish_by_events_relay.send"
+            "jaiminho.management.commands.events_relay.event_failed_to_publish_by_events_relay.send"
         )
 
     @pytest.fixture
@@ -85,14 +85,14 @@ class TestValidateEventsRelay:
 
     @pytest.fixture
     def command_without_capture_exception_fn(self):
-        class WithoutCaptureExceptionFn(RelayEventsCommand):
+        class WithoutCaptureExceptionFn(Command):
             capture_exception_fn = None
 
         return WithoutCaptureExceptionFn
 
     @pytest.fixture
     def command_with_custom_capture_exception(self, mock_capture_exception_fn):
-        class WithCustomCaptureException(RelayEventsCommand):
+        class WithCustomCaptureException(Command):
             capture_exception_fn = mock_capture_exception_fn
 
         return WithCustomCaptureException

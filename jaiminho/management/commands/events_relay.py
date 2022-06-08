@@ -12,7 +12,7 @@ from jaiminho.signals import event_published_by_events_relay, event_failed_to_pu
 log = logging.getLogger(__name__)
 
 
-class RelayEventsCommand(BaseCommand):
+class Command(BaseCommand):
     capture_exception_fn = settings.default_capture_exception
 
     def handle(self, *args, **options):
