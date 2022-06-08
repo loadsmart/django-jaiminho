@@ -1,6 +1,4 @@
-import sentry_sdk
-
-from jaiminho.management.relay_events import RelayEventsCommand
+from jaiminho.management.events_relay import RelayEventsCommand
 
 
 class Command(RelayEventsCommand):

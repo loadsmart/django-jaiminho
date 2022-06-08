@@ -9,27 +9,27 @@ from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 
 from jaiminho.kwargs_handler import format_kwargs
-from jaiminho.management.relay_events import RelayEventsCommand
+from jaiminho.management.events_relay import RelayEventsCommand
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
-from jaiminho_django_project.core.management.commands import validate_relay_events
+from jaiminho_django_project.core.management.commands import validate_events_relay
 
 pytestmark = pytest.mark.django_db
 
 
-class TestValidateRelayEvents:
+class TestValidateEventsRelay:
     @pytest.fixture
     def mock_log_info(self, mocker):
-        return mocker.patch("jaiminho.management.relay_events.log.info")
+        return mocker.patch("jaiminho.management.events_relay.log.info")
 
     @pytest.fixture
     def mock_log_warning(self, mocker):
-        return mocker.patch("jaiminho.management.relay_events.log.warning")
+        return mocker.patch("jaiminho.management.events_relay.log.warning")
 
     @pytest.fixture
     def mock_capture_exception(self, mocker):
         return mocker.patch(
-            "jaiminho_django_project.core.management.commands.validate_relay_events.Command.capture_exception_fn"
+            "jaiminho_django_project.core.management.commands.validate_events_relay.Command.capture_exception_fn"
         )
 
     @pytest.fixture
@@ -79,7 +79,7 @@ class TestValidateRelayEvents:
         assert Event.objects.all().count() == 1
 
         with freeze_time("2022-10-31"):
-            call_command(validate_relay_events.Command())
+            call_command(validate_events_relay.Command())
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
@@ -95,7 +95,7 @@ class TestValidateRelayEvents:
         assert Event.objects.filter(sent_at__isnull=True).count() == 0
         assert Event.objects.filter(sent_at__isnull=False).count() == 1
 
-        call_command(validate_relay_events.Command())
+        call_command(validate_events_relay.Command())
 
         mock_log_info.assert_called_with("No failed events found.")
         assert Event.objects.all().count() == 1
@@ -116,13 +116,13 @@ class TestValidateRelayEvents:
             options=format_kwargs(a="2"),
         )
 
-        call_command(validate_relay_events.Command())
+        call_command(validate_events_relay.Command())
 
         call_1 = call(event_1.payload, encoder=DjangoJSONEncoder, a="1")
         call_2 = call(event_2.payload, encoder=DjangoJSONEncoder, a="2")
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
 
-    def test_relay_events_ordered_by_created_by(self, mock_internal_notify):
+    def test_events_ordered_by_created_by_relay(self, mock_internal_notify):
         function_signature = "jaiminho_django_project.send.notify"
         encoder = "django.core.serializers.json.DjangoJSONEncoder"
         with freeze_time("2022-01-03"):
@@ -144,7 +144,7 @@ class TestValidateRelayEvents:
                 options=format_kwargs(a="3"),
             )
 
-        call_command(validate_relay_events.Command())
+        call_command(validate_events_relay.Command())
 
         call_1 = call(event_1.payload, encoder=DjangoJSONEncoder, a="1")
         call_2 = call(event_2.payload, encoder=DjangoJSONEncoder, a="2")
@@ -160,7 +160,7 @@ class TestValidateRelayEvents:
         )
 
         with freeze_time("2022-10-31"):
-            call_command(validate_relay_events.Command())
+            call_command(validate_events_relay.Command())
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
@@ -175,7 +175,7 @@ class TestValidateRelayEvents:
     ):
         assert Event.objects.all().count() == 1
 
-        call_command(validate_relay_events.Command())
+        call_command(validate_events_relay.Command())
 
         mock_capture_exception.assert_called_once()
         assert Event.objects.all().count() == 1
@@ -186,7 +186,7 @@ class TestValidateRelayEvents:
             encoder="django.core.serializers.json.DjangoJSONEncoder",
         )
 
-        call_command(validate_relay_events.Command())
+        call_command(validate_events_relay.Command())
 
         mock_log_warning.assert_called_once()
         mock_calls = mock_log_warning.call_args[0]
@@ -201,7 +201,7 @@ class TestValidateRelayEvents:
             encoder="django.core.serializers.json.DjangoJSONEncoder",
         )
 
-        call_command(validate_relay_events.Command())
+        call_command(validate_events_relay.Command())
 
         mock_log_warning.assert_called_once()
         mock_calls = mock_log_warning.call_args[0]
