@@ -33,6 +33,28 @@ class TestValidateEventsRelay:
         )
 
     @pytest.fixture
+    def mock_event_published_signal(self, mocker):
+        return mocker.patch("jaiminho.send.event_published.send")
+
+    @pytest.fixture
+    def mock_event_failed_to_publish_signal(self, mocker):
+        return mocker.patch(
+            "jaiminho.send.event_failed_to_publish.send"
+        )
+
+    @pytest.fixture
+    def mock_event_published_by_events_relay_signal(self, mocker):
+        return mocker.patch(
+            "jaiminho.management.events_relay.event_published_by_events_relay.send"
+        )
+
+    @pytest.fixture
+    def mock_event_failed_to_publish_by_events_relay_signal(self, mocker):
+        return mocker.patch(
+            "jaiminho.management.events_relay.event_failed_to_publish_by_events_relay.send"
+        )
+
+    @pytest.fixture
     def mock_internal_notify(self, mocker):
         return mocker.patch("jaiminho_django_project.send.internal_notify")
 
@@ -89,7 +111,39 @@ class TestValidateEventsRelay:
         event = Event.objects.all()[0]
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
-    def test_relay_nothing_when_does_not_exist_failed_events(
+    def test_trigger_the_correct_signal_when_resent_successfully(
+        self,
+        failed_event,
+        mock_internal_notify,
+        mock_event_published_signal,
+        mock_event_published_by_events_relay_signal,
+    ):
+        call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_called_once()
+        mock_event_published_signal.assert_not_called()
+        mock_event_published_by_events_relay_signal.assert_called_once()
+        mock_args = mock_event_published_by_events_relay_signal.call_args_list[0].kwargs
+        assert mock_args["sender"].__name__ == "notify"
+        assert mock_args["instance"] == failed_event.payload
+
+    def test_trigger_the_correct_signal_when_resent_failed(
+        self,
+        failed_event,
+        mock_internal_notify_fail,
+        mock_event_failed_to_publish_signal,
+        mock_event_failed_to_publish_by_events_relay_signal,
+    ):
+        call_command(validate_events_relay.Command())
+
+        mock_internal_notify_fail.assert_called_once()
+        mock_event_failed_to_publish_signal.assert_not_called()
+        mock_event_failed_to_publish_by_events_relay_signal.assert_called_once()
+        mock_args = mock_event_failed_to_publish_by_events_relay_signal.call_args_list[0].kwargs
+        assert mock_args["sender"].__name__ == "notify"
+        assert mock_args["instance"] == failed_event.payload
+
+    def test_doest_not_relay_when_does_not_exist_failed_events(
         self, successful_event, mock_log_info
     ):
         assert Event.objects.filter(sent_at__isnull=True).count() == 0
@@ -101,7 +155,8 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 1
 
     def test_relay_every_event_even_at_lest_one_fail(
-        self, mock_internal_notify_fail,
+        self,
+        mock_internal_notify_fail,
     ):
         function_signature = "jaiminho_django_project.send.notify"
         encoder = "django.core.serializers.json.DjangoJSONEncoder"
@@ -191,7 +246,9 @@ class TestValidateEventsRelay:
         mock_log_warning.assert_called_once()
         mock_calls = mock_log_warning.call_args[0]
         assert "Function does not exist anymore" in mock_calls[0]
-        assert "No module named 'jaiminho_django_project.missing_module'" in mock_calls[1]
+        assert (
+            "No module named 'jaiminho_django_project.missing_module'" in mock_calls[1]
+        )
 
     def test_raise_exception_when_function_does_not_exist_anymore(
         self, mock_log_warning
