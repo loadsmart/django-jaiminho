@@ -13,6 +13,7 @@ from jaiminho.management.commands.events_relay import Command
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.management.commands import validate_events_relay
+from jaiminho_django_project.send import notify
 
 pytestmark = pytest.mark.django_db
 
@@ -124,8 +125,12 @@ class TestValidateEventsRelay:
         mock_event_published_signal.assert_not_called()
         mock_event_published_by_events_relay_signal.assert_called_once()
         mock_args = mock_event_published_by_events_relay_signal.call_args_list[0].kwargs
-        assert mock_args["sender"].__name__ == "notify"
-        assert mock_args["instance"] == failed_event.payload
+        if "sender" in mock_args:
+            assert mock_args["sender"].__name__ == "notify"
+            assert mock_args["instance"] == failed_event.payload
+        else:
+            assert mock_args[0].__name__ == "notify"
+            assert mock_args[1] == failed_event.payload
 
     def test_trigger_the_correct_signal_when_resent_failed(
         self,
@@ -140,8 +145,12 @@ class TestValidateEventsRelay:
         mock_event_failed_to_publish_signal.assert_not_called()
         mock_event_failed_to_publish_by_events_relay_signal.assert_called_once()
         mock_args = mock_event_failed_to_publish_by_events_relay_signal.call_args_list[0].kwargs
-        assert mock_args["sender"].__name__ == "notify"
-        assert mock_args["instance"] == failed_event.payload
+        if "sender" in mock_args:
+            assert mock_args["sender"].__name__ == "notify"
+            assert mock_args["instance"] == failed_event.payload
+        else:
+            assert mock_args[0].__name__ == "notify"
+            assert mock_args[1] == failed_event.payload
 
     def test_doest_not_relay_when_does_not_exist_failed_events(
         self, successful_event, mock_log_info
