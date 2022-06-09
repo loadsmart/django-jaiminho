@@ -2,6 +2,11 @@
 
 from django.db import migrations, models
 
+try:
+    from django.db.models import JSONField
+except ImportError:
+    from django.contrib.postgres.fields import JSONField
+
 
 class Migration(migrations.Migration):
 
@@ -24,7 +29,7 @@ class Migration(migrations.Migration):
                 ),
                 ("type", models.CharField(max_length=64)),
                 ("action", models.CharField(max_length=64)),
-                ("payload", models.JSONField()),
+                ("payload", JSONField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("sent_at", models.DateTimeField(null=True)),
             ],
