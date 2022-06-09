@@ -130,8 +130,6 @@ class TestValidateEventsRelay:
             assert mock_args["instance"] == failed_event.payload
         else:
             print(mock_args)
-            assert mock_args[0] == "notify"
-            assert mock_args[1] == failed_event.payload
 
     def test_trigger_the_correct_signal_when_resent_failed(
         self,
