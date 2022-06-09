@@ -70,7 +70,7 @@ class TestEventCleanerCommand:
         call_command(validate_event_cleaner.Command())
         assert len(Event.objects.all()) == 4
 
-    def test_command_without_time_to_delete_configuration_uses_default_14_days(
+    def test_command_without_time_to_delete_configuration_uses_default_7_days(
         self,
         older_events,
         newer_events,
