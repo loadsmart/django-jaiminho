@@ -129,7 +129,6 @@ class TestValidateEventsRelay:
             assert mock_args["sender"].__name__ == "notify"
             assert mock_args["instance"] == failed_event.payload
         else:
-            print(mock_args[0])
             assert mock_args[0] == "notify"
             assert mock_args[1] == failed_event.payload
 
@@ -150,7 +149,7 @@ class TestValidateEventsRelay:
             assert mock_args["sender"].__name__ == "notify"
             assert mock_args["instance"] == failed_event.payload
         else:
-            assert mock_args[0].__name__ == "notify"
+            assert mock_args[0] == "notify"
             assert mock_args[1] == failed_event.payload
 
     def test_doest_not_relay_when_does_not_exist_failed_events(
