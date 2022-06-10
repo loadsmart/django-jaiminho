@@ -3,6 +3,7 @@ from functools import wraps
 
 from django.utils import timezone
 
+from jaiminho.func_handler import format_func_path
 from jaiminho.models import Event
 from jaiminho.kwargs_handler import format_kwargs
 from jaiminho.signals import event_published, event_failed_to_publish
@@ -12,17 +13,16 @@ logger = logging.getLogger(__name__)
 
 
 def save_to_outbox(func):
-    func_signature = f"{func.__module__}.{func.__name__}" if func else None
+    func_signature = format_func_path(func)
 
     @wraps(func)
     def inner(payload, encoder=None, **kwargs):
         if encoder is None:
             encoder = settings.default_encoder
-
         type = payload.get("type")
         action = payload.get("action")
         options = format_kwargs(**kwargs)
-        encoder_path = f"{encoder.__module__}.{encoder.__name__}"
+        encoder_path = format_func_path(encoder)
         try:
             result = func(payload, encoder=encoder, **kwargs)
             event_published.send(sender=func, instance=payload)
@@ -49,4 +49,5 @@ def save_to_outbox(func):
             raise
         return result
 
+    inner.original_func = func
     return inner

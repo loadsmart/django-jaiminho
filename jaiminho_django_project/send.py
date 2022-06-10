@@ -17,4 +17,8 @@ def notify(payload, **kwargs):
     internal_notify(payload, **kwargs)
 
 
-__all__ = ("notify",)
+def notify_without_decorator(payload, **kwargs):
+    internal_notify(payload, **kwargs)
+
+
+__all__ = ("notify", "notify_without_decorator")
