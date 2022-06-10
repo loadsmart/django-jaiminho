@@ -31,5 +31,8 @@ def load_argument(argument):
 
 
 def load_kwargs(kwargs_string):
+    if not kwargs_string:
+        return {}
+
     arguments = [load_argument(argument) for argument in kwargs_string.split("|")]
     return {key: value for key, value in arguments}
