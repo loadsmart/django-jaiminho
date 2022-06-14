@@ -17,11 +17,6 @@ class EventFactory(factory.django.DjangoModelFactory):
             "action": "created",
         }
     )
-    encoder = DjangoJSONEncoder
-    function_signature = None
-    options = ""
-    created_at = factory.LazyFunction(datetime.now)
-    sent_at = factory.LazyFunction(datetime.now)
 
     class Meta:
         model = Event
