@@ -1,16 +1,19 @@
+import factory
 import uuid
 
-import factory
+from datetime import datetime
+from django.core.serializers.json import DjangoJSONEncoder
 
 from jaiminho.models import Event
 
 
 class EventFactory(factory.django.DjangoModelFactory):
-    type = "shipment"
+
+    type = "generic_event"
     action = "created"
     payload = factory.LazyAttribute(
         lambda _: {
-            "shipment": {"uuid": str(uuid.uuid4())},
+            "generic_object": {"uuid": str(uuid.uuid4())},
             "action": "created",
         }
     )
