@@ -22,7 +22,7 @@ version = os.getenv("CIRCLE_TAG", os.getenv("CIRCLE_SHA1")) or "0.0.0"
 
 setup(
     name="jaiminho",
-    version="0.1.0",
+    version=version,
     description="Python library generated using cookiecutter template",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -41,7 +41,7 @@ setup(
     ],
     packages=find_packages(exclude=["docs", "tests", "jaiminho_django_project"]),
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4",
-    install_requires=["Django", "smartevents", "django-picklefield"],
+    install_requires=["Django", "smartevents", "django-picklefield", "sentry_sdk"],
     project_urls={
         "Documentation": "https://docs.loadsmart.io/jaiminho",
         "Source": "https://github.com/loadsmart/jaiminho",
