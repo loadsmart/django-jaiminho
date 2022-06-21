@@ -10,7 +10,7 @@ from jaiminho.models import Event
 logger = logging.getLogger(__name__)
 
 
-class EventCleanerCommand(BaseCommand):
+class Command(BaseCommand):
     def __new__(cls, *args, **kwargs):
         assert isinstance(settings.time_to_delete, timedelta)
         return super().__new__(cls, *args, **kwargs)
