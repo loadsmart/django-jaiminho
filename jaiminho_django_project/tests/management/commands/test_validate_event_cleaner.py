@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
-from jaiminho_django_project.core.management.commands import validate_event_cleaner
+from jaiminho_django_project.management.commands import validate_event_cleaner
 
 pytestmark = pytest.mark.django_db
 
