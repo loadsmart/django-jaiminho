@@ -25,7 +25,7 @@ def save_to_outbox(func):
         encoder_path = format_func_path(encoder)
         try:
             result = func(payload, encoder=encoder, **kwargs)
-            event_published.send(sender=func, instance=payload)
+            event_published.send(sender=func, event_payload=payload)
             if settings.persist_all_events:
                 Event.objects.create(
                     type=type,
@@ -45,7 +45,7 @@ def save_to_outbox(func):
                 function_signature=func_signature,
                 options=options,
             )
-            event_failed_to_publish.send(sender=func, instance=payload)
+            event_failed_to_publish.send(sender=func, event_payload=payload)
             raise
         return result
 
