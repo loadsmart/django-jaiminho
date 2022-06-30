@@ -34,7 +34,7 @@ class Command(BaseCommand):
                 event.sent_at = timezone.now()
                 event.save()
                 event_published_by_events_relay.send(
-                    sender=original_fn, instance=event.payload
+                    sender=original_fn, event_payload=event.payload
                 )
 
             except (ModuleNotFoundError, AttributeError) as e:
@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 log.warning(e)
                 original_fn = self._extract_original_func(event)
                 event_failed_to_publish_by_events_relay.send(
-                    sender=original_fn, instance=event.payload
+                    sender=original_fn, event_payload=event.payload
                 )
                 if self.capture_exception_fn:
                     self.capture_exception_fn(e)
