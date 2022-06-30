@@ -125,7 +125,7 @@ class TestValidateEventsRelay:
         mock_event_published_by_events_relay_signal.assert_called_once()
         mock_args = mock_event_published_by_events_relay_signal.call_args_list[0][1]
         assert mock_args["sender"].__name__ == "notify"
-        assert mock_args["instance"] == failed_event.payload
+        assert mock_args["event_payload"] == failed_event.payload
 
     def test_trigger_the_correct_signal_when_resent_failed(
         self,
@@ -141,7 +141,7 @@ class TestValidateEventsRelay:
         mock_event_failed_to_publish_by_events_relay_signal.assert_called_once()
         mock_args = mock_event_failed_to_publish_by_events_relay_signal.call_args_list[0][1]
         assert mock_args["sender"].__name__ == "notify"
-        assert mock_args["instance"] == failed_event.payload
+        assert mock_args["event_payload"] == failed_event.payload
 
     def test_doest_not_relay_when_does_not_exist_failed_events(
         self, successful_event, mock_log_info
