@@ -50,10 +50,10 @@ class Command(BaseCommand):
                 )
                 self._capture_exception(e)
 
-    def _capture_exception(self, e):
+    def _capture_exception(self, exception):
         capture_exception = settings.default_capture_exception
         if capture_exception:
-            capture_exception(e)
+            capture_exception(exception)
 
     def _extract_original_func(self, event):
         fn = load_func_from_path(event.function_signature)
