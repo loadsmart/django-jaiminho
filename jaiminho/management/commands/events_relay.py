@@ -16,8 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    capture_message_fn = settings.default_capture_exception
-
     def handle(self, *args, **options):
         failed_events = Event.objects.filter(sent_at__isnull=True).order_by(
             "created_at"
@@ -42,10 +40,7 @@ class Command(BaseCommand):
 
             except (ModuleNotFoundError, AttributeError) as e:
                 log.warning("Function does not exist anymore: %s", str(e))
-                if self.capture_message_fn:
-                    self.capture_message_fn(
-                        f"Function does not exist anymore for {event}"
-                    )
+                self._capture_exception(e)
 
             except Exception as e:
                 log.warning(e)
@@ -53,10 +48,12 @@ class Command(BaseCommand):
                 event_failed_to_publish_by_events_relay.send(
                     sender=original_fn, event_payload=event.payload
                 )
-                if self.capture_message_fn:
-                    self.capture_message_fn(
-                        f"Exception raised when trying to to resend {event}"
-                    )
+                self._capture_exception(e)
+
+    def _capture_exception(self, e):
+        capture_exception = settings.default_capture_exception
+        if capture_exception:
+            capture_exception(e)
 
     def _extract_original_func(self, event):
         fn = load_func_from_path(event.function_signature)
