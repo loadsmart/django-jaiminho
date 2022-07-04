@@ -12,6 +12,11 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
+def mock_log_metric(mocker):
+    return mocker.patch("jaiminho_django_project.app.signals.log_metric")
+
+
+@pytest.fixture
 def mock_internal_notify(mocker):
     return mocker.patch("jaiminho_django_project.send.internal_notify")
 
@@ -40,16 +45,18 @@ def mock_event_failed_to_publish_signal(mocker):
         (True, 1),
     ),
 )
-def test_send_success(mock_internal_notify, mocker, persist_all_events, events_count):
+def test_send_success(
+    mock_internal_notify, mock_log_metric, mocker, persist_all_events, events_count
+):
     mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
-    jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
-    mock_internal_notify.assert_called_once_with(
-        {"action": "a", "type": "t", "c": "d"}, encoder=DjangoJSONEncoder
-    )
+    payload = {"action": "a", "type": "t", "c": "d"}
+    jaiminho_django_project.send.notify(payload)
+    mock_internal_notify.assert_called_once_with(payload, encoder=DjangoJSONEncoder)
     assert Event.objects.all().count() == events_count
+    mock_log_metric.assert_called_once_with("event-published", payload)
 
 
-def test_send_success_with_encoder(mock_internal_notify, mocker):
+def test_send_success_with_encoder(mock_log_metric, mock_internal_notify, mocker):
     mocker.patch("jaiminho.send.settings.persist_all_events", True)
     payload = {"action": "a", "type": "t", "c": "d"}
 
@@ -63,18 +70,23 @@ def test_send_success_with_encoder(mock_internal_notify, mocker):
     assert event.options == ""
     assert event.encoder == "django.core.serializers.json.DjangoJSONEncoder"
     assert event.function_signature == "jaiminho_django_project.send.notify"
+    mock_log_metric.assert_called_once_with("event-published", payload)
 
 
 @pytest.mark.parametrize(("persist_all_events"), (False, True))
-def test_send_fail(mock_internal_notify_fail, mocker, persist_all_events):
+def test_send_fail(
+    mock_log_metric, mock_internal_notify_fail, mocker, persist_all_events
+):
     mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+    payload = {"action": "a", "type": "t", "c": "d"}
     with pytest.raises(Exception):
-        jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
+        jaiminho_django_project.send.notify(payload)
     mock_internal_notify_fail.assert_called_once_with(
-        {"action": "a", "type": "t", "c": "d"}, encoder=DjangoJSONEncoder
+        payload, encoder=DjangoJSONEncoder
     )
     assert Event.objects.all().count() == 1
     assert Event.objects.first().sent_at is None
+    mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
 
 
 def test_send_trigger_event_published_signal(

@@ -19,6 +19,10 @@ pytestmark = pytest.mark.django_db
 
 class TestValidateEventsRelay:
     @pytest.fixture
+    def mock_log_metric(self, mocker):
+        return mocker.patch("jaiminho_django_project.app.signals.log_metric")
+
+    @pytest.fixture
     def mock_log_info(self, mocker):
         return mocker.patch("jaiminho.management.commands.events_relay.log.info")
 
@@ -38,15 +42,7 @@ class TestValidateEventsRelay:
 
     @pytest.fixture
     def mock_event_failed_to_publish_signal(self, mocker):
-        return mocker.patch(
-            "jaiminho.send.event_failed_to_publish.send"
-        )
-
-    @pytest.fixture
-    def mock_event_published_by_events_relay_signal(self, mocker):
-        return mocker.patch(
-            "jaiminho.management.commands.events_relay.event_published_by_events_relay.send"
-        )
+        return mocker.patch("jaiminho.send.event_failed_to_publish.send")
 
     @pytest.fixture
     def mock_event_failed_to_publish_by_events_relay_signal(self, mocker):
@@ -97,7 +93,9 @@ class TestValidateEventsRelay:
 
         return WithCustomCaptureException
 
-    def test_relay_failed_event(self, failed_event, mock_internal_notify):
+    def test_relay_failed_event(
+        self, mock_log_metric, failed_event, mock_internal_notify
+    ):
         assert Event.objects.all().count() == 1
 
         with freeze_time("2022-10-31"):
@@ -114,34 +112,32 @@ class TestValidateEventsRelay:
     def test_trigger_the_correct_signal_when_resent_successfully(
         self,
         failed_event,
+        mock_log_metric,
         mock_internal_notify,
         mock_event_published_signal,
-        mock_event_published_by_events_relay_signal,
     ):
         call_command(validate_events_relay.Command())
 
         mock_internal_notify.assert_called_once()
         mock_event_published_signal.assert_not_called()
-        mock_event_published_by_events_relay_signal.assert_called_once()
-        mock_args = mock_event_published_by_events_relay_signal.call_args_list[0][1]
-        assert mock_args["sender"].__name__ == "notify"
-        assert mock_args["event_payload"] == failed_event.payload
+        mock_log_metric.assert_called_once_with(
+            "event-published-through-outbox", failed_event.payload
+        )
 
     def test_trigger_the_correct_signal_when_resent_failed(
         self,
         failed_event,
+        mock_log_metric,
         mock_internal_notify_fail,
         mock_event_failed_to_publish_signal,
-        mock_event_failed_to_publish_by_events_relay_signal,
     ):
         call_command(validate_events_relay.Command())
 
         mock_internal_notify_fail.assert_called_once()
         mock_event_failed_to_publish_signal.assert_not_called()
-        mock_event_failed_to_publish_by_events_relay_signal.assert_called_once()
-        mock_args = mock_event_failed_to_publish_by_events_relay_signal.call_args_list[0][1]
-        assert mock_args["sender"].__name__ == "notify"
-        assert mock_args["event_payload"] == failed_event.payload
+        mock_log_metric.assert_called_once_with(
+            "event-failed-to-publish-through-outbox", failed_event.payload
+        )
 
     def test_doest_not_relay_when_does_not_exist_failed_events(
         self, successful_event, mock_log_info
