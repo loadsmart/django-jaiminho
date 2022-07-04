@@ -9,7 +9,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 
 from jaiminho.kwargs_handler import format_kwargs
-from jaiminho.management.commands.events_relay import Command
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.management.commands import validate_events_relay
@@ -57,7 +56,7 @@ class TestValidateEventsRelay:
     @pytest.fixture
     def mock_internal_notify_fail(self, mocker):
         mock = mocker.patch("jaiminho_django_project.send.internal_notify")
-        mock.side_effect = Exception("ups")
+        mock.side_effect = Exception("Some error")
         return mock
 
     @pytest.fixture
@@ -76,22 +75,8 @@ class TestValidateEventsRelay:
         )
 
     @pytest.fixture
-    def mock_capture_message_fn(self):
+    def mock_capture_exception_fn(self):
         return mock.Mock()
-
-    @pytest.fixture
-    def command_without_capture_message_fn(self):
-        class WithoutCaptureExceptionFn(Command):
-            capture_message_fn = None
-
-        return WithoutCaptureExceptionFn
-
-    @pytest.fixture
-    def command_with_custom_capture_exception(self, mock_capture_message_fn):
-        class WithCustomCaptureException(Command):
-            capture_message_fn = mock_capture_message_fn
-
-        return WithCustomCaptureException
 
     def test_relay_failed_event(
         self, mock_log_metric, failed_event, mock_internal_notify
@@ -222,16 +207,27 @@ class TestValidateEventsRelay:
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     def test_dont_create_another_event_when_relay_fails(
-        self, failed_event, mock_internal_notify_fail, mock_capture_exception
+        self, failed_event, mock_internal_notify_fail, mock_capture_exception_fn, mocker
     ):
+        mocker.patch(
+            "jaiminho.send.settings.default_capture_exception",
+            mock_capture_exception_fn,
+        )
         assert Event.objects.all().count() == 1
 
         call_command(validate_events_relay.Command())
 
-        mock_capture_exception.assert_called_once()
+        mock_capture_exception_fn.assert_called_once()
         assert Event.objects.all().count() == 1
 
-    def test_raise_exception_when_module_does_not_exist_anymore(self, mock_log_warning):
+    def test_raise_exception_when_module_does_not_exist_anymore(
+        self, mocker, mock_log_warning, mock_capture_exception_fn
+    ):
+        mocker.patch(
+            "jaiminho.send.settings.default_capture_exception",
+            mock_capture_exception_fn,
+        )
+
         EventFactory(
             function_signature="jaiminho_django_project.missing_module.notify",
             encoder="django.core.serializers.json.DjangoJSONEncoder",
@@ -244,6 +240,10 @@ class TestValidateEventsRelay:
         assert "Function does not exist anymore" in mock_calls[0]
         assert (
             "No module named 'jaiminho_django_project.missing_module'" in mock_calls[1]
+        )
+        capture_exception_call = mock_capture_exception_fn.call_args[0][0]
+        assert (
+                "No module named 'jaiminho_django_project.missing_module'" == str(capture_exception_call)
         )
 
     def test_raise_exception_when_function_does_not_exist_anymore(
@@ -266,22 +266,27 @@ class TestValidateEventsRelay:
 
     def test_works_fine_without_capture_message_fn(
         self,
+        mocker,
         failed_event,
-        command_without_capture_message_fn,
         mock_internal_notify_fail,
     ):
-        call_command(command_without_capture_message_fn())
+        mocker.patch("jaiminho.send.settings.default_capture_exception", None)
+
+        call_command(validate_events_relay.Command())
 
         mock_internal_notify_fail.assert_called_once()
 
     def test_works_with_custom_capture_message_fn(
-        self,
-        failed_event,
-        mock_capture_message_fn,
-        command_with_custom_capture_exception,
-        mock_internal_notify_fail,
+        self, mocker, failed_event, mock_internal_notify_fail
     ):
-        call_command(command_with_custom_capture_exception())
+        mock_custom_capture_fn = mock.Mock()
+        mocker.patch(
+            "jaiminho.send.settings.default_capture_exception", mock_custom_capture_fn
+        )
+
+        call_command(validate_events_relay.Command())
 
         mock_internal_notify_fail.assert_called_once()
-        mock_capture_message_fn.assert_called_once()
+        exception_raised = mock_custom_capture_fn.call_args[0][0]
+        assert exception_raised == mock_internal_notify_fail.side_effect
+        assert "Some error" == str(exception_raised)
