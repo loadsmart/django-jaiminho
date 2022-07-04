@@ -15,3 +15,6 @@ class Event(models.Model):
     options = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return f"Event(id={self.id}, type={self.type}, action={self.action}"

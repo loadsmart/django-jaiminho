@@ -7,13 +7,16 @@ from jaiminho import settings
 from jaiminho.func_handler import load_func_from_path
 from jaiminho.kwargs_handler import load_kwargs
 from jaiminho.models import Event
-from jaiminho.signals import event_published_by_events_relay, event_failed_to_publish_by_events_relay
+from jaiminho.signals import (
+    event_published_by_events_relay,
+    event_failed_to_publish_by_events_relay,
+)
 
 log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    capture_exception_fn = settings.default_capture_exception
+    capture_message_fn = settings.default_capture_exception
 
     def handle(self, *args, **options):
         failed_events = Event.objects.filter(sent_at__isnull=True).order_by(
@@ -39,8 +42,10 @@ class Command(BaseCommand):
 
             except (ModuleNotFoundError, AttributeError) as e:
                 log.warning("Function does not exist anymore: %s", str(e))
-                if self.capture_exception_fn:
-                    self.capture_exception_fn(e)
+                if self.capture_message_fn:
+                    self.capture_message_fn(
+                        f"Function does not exist anymore for {event}"
+                    )
 
             except Exception as e:
                 log.warning(e)
@@ -48,8 +53,10 @@ class Command(BaseCommand):
                 event_failed_to_publish_by_events_relay.send(
                     sender=original_fn, event_payload=event.payload
                 )
-                if self.capture_exception_fn:
-                    self.capture_exception_fn(e)
+                if self.capture_message_fn:
+                    self.capture_message_fn(
+                        f"Exception raised when trying to to resend {event}"
+                    )
 
     def _extract_original_func(self, event):
         fn = load_func_from_path(event.function_signature)
