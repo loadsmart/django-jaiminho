@@ -29,7 +29,7 @@ class TestValidateEventsRelay:
     @pytest.fixture
     def mock_capture_exception(self, mocker):
         return mocker.patch(
-            "jaiminho_django_project.management.commands.validate_events_relay.Command.capture_exception_fn"
+            "jaiminho_django_project.management.commands.validate_events_relay.Command.capture_message_fn"
         )
 
     @pytest.fixture
@@ -80,20 +80,20 @@ class TestValidateEventsRelay:
         )
 
     @pytest.fixture
-    def mock_capture_exception_fn(self):
+    def mock_capture_message_fn(self):
         return mock.Mock()
 
     @pytest.fixture
-    def command_without_capture_exception_fn(self):
+    def command_without_capture_message_fn(self):
         class WithoutCaptureExceptionFn(Command):
-            capture_exception_fn = None
+            capture_message_fn = None
 
         return WithoutCaptureExceptionFn
 
     @pytest.fixture
-    def command_with_custom_capture_exception(self, mock_capture_exception_fn):
+    def command_with_custom_capture_exception(self, mock_capture_message_fn):
         class WithCustomCaptureException(Command):
-            capture_exception_fn = mock_capture_exception_fn
+            capture_message_fn = mock_capture_message_fn
 
         return WithCustomCaptureException
 
@@ -268,24 +268,24 @@ class TestValidateEventsRelay:
             in mock_calls[1]
         )
 
-    def test_works_fine_without_capture_exception_fn(
+    def test_works_fine_without_capture_message_fn(
         self,
         failed_event,
-        command_without_capture_exception_fn,
+        command_without_capture_message_fn,
         mock_internal_notify_fail,
     ):
-        call_command(command_without_capture_exception_fn())
+        call_command(command_without_capture_message_fn())
 
         mock_internal_notify_fail.assert_called_once()
 
-    def test_works_with_custom_capture_exception_fn(
+    def test_works_with_custom_capture_message_fn(
         self,
         failed_event,
-        mock_capture_exception_fn,
+        mock_capture_message_fn,
         command_with_custom_capture_exception,
         mock_internal_notify_fail,
     ):
         call_command(command_with_custom_capture_exception())
 
         mock_internal_notify_fail.assert_called_once()
-        mock_capture_exception_fn.assert_called_once()
+        mock_capture_message_fn.assert_called_once()
