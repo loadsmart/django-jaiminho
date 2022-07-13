@@ -46,7 +46,10 @@ def save_to_outbox(func):
                 options=options,
             )
             event_failed_to_publish.send(sender=func, event_payload=payload)
-            raise
+            if settings.raise_on_publishing_error:
+                raise
+            return
+
         return result
 
     inner.original_func = func
