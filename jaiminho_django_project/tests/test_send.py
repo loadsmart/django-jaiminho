@@ -78,6 +78,24 @@ def test_send_fail(
     mock_log_metric, mock_internal_notify_fail, mocker, persist_all_events
 ):
     mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+    mocker.patch("jaiminho.send.settings.raise_on_publishing_error", False)
+    payload = {"action": "a", "type": "t", "c": "d"}
+    jaiminho_django_project.send.notify(payload)
+
+    mock_internal_notify_fail.assert_called_once_with(
+        payload, encoder=DjangoJSONEncoder
+    )
+    assert Event.objects.all().count() == 1
+    assert Event.objects.first().sent_at is None
+    mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
+
+
+@pytest.mark.parametrize(("persist_all_events"), (False, True))
+def test_send_fail_raise_exception(
+    mock_log_metric, mock_internal_notify_fail, mocker, persist_all_events
+):
+    mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+    mocker.patch("jaiminho.send.settings.raise_on_publishing_error", True)
     payload = {"action": "a", "type": "t", "c": "d"}
     with pytest.raises(Exception):
         jaiminho_django_project.send.notify(payload)
@@ -87,7 +105,6 @@ def test_send_fail(
     assert Event.objects.all().count() == 1
     assert Event.objects.first().sent_at is None
     mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
-
 
 def test_send_trigger_event_published_signal(
     mock_internal_notify, mock_event_published_signal
@@ -129,11 +146,8 @@ def test_send_with_parameters(mock_internal_notify_fail, encoder):
 
 def test_send_fail_with_encoder_default(mock_internal_notify_fail):
     payload = {"action": "a", "type": "t", "c": "d"}
-
     with pytest.raises(Exception):
         jaiminho_django_project.send.notify(payload)
-
-    mock_internal_notify_fail.assert_called_with(payload, encoder=DjangoJSONEncoder)
     assert Event.objects.all().count() == 1
     event = Event.objects.first()
     assert event.sent_at is None
