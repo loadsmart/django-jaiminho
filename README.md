@@ -25,7 +25,9 @@ Configure jaiminho options in Django settings.py:
 # JAIMINHO
 
 JAIMINHO_CONFIG = {
-    "PERSIST_ALL_EVENTS": False
+    "PERSIST_ALL_EVENTS": False,
+    "DELETE_AFTER_SEND": True,
+    "DEFAULT_ENCODER": DjangoJSONEncoder
     }
 
 ```
@@ -35,6 +37,7 @@ JAIMINHO_CONFIG = {
 ### Configuration options
 
 - PERSIST_ALL_EVENTS - Saves all events and not only the ones that fail, default is False
+- DELETE_AFTER_SEND - Delete the event from the outbox table immediately after a successful send
 - DEFAULT_ENCODER - Default Encoder for the payload (overwritable in the function call)
 
 Detailed documentation is available at https://docs.loadsmart.io/jaiminho/latest/index.html
