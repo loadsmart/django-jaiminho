@@ -54,18 +54,14 @@ def mock_event_failed_to_publish_signal(mocker):
     return mocker.patch("jaiminho.send.event_failed_to_publish.send")
 
 
-@pytest.mark.parametrize(
-    "events_count",
-    (True, 1),
-)
 def test_send_success_should_persist_all_events(
-    mock_internal_notify, mock_log_metric, mock_should_not_delete_after_send, mock_should_persist_all_events, events_count
+    mock_internal_notify, mock_log_metric, mock_should_not_delete_after_send, mock_should_persist_all_events
 ):
     payload = {"action": "a", "type": "t", "c": "d"}
     with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
         jaiminho_django_project.send.notify(payload)
     mock_internal_notify.assert_called_once_with(payload, encoder=DjangoJSONEncoder)
-    assert Event.objects.all().count() == events_count
+    assert Event.objects.all().count() == 1
     mock_log_metric.assert_called_once_with("event-published", payload)
     assert len(callbacks) == 1
 
