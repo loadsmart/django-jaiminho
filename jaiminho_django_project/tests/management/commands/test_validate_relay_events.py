@@ -78,8 +78,16 @@ class TestValidateEventsRelay:
     def mock_capture_exception_fn(self):
         return mock.Mock()
 
+    @pytest.fixture
+    def mock_should_delete_after_send(self, mocker):
+        return mocker.patch("jaiminho.send.settings.delete_after_send", True)
+
+    @pytest.fixture
+    def mock_should_not_delete_after_send(self, mocker):
+        return mocker.patch("jaiminho.send.settings.delete_after_send", False)
+
     def test_relay_failed_event(
-        self, mock_log_metric, failed_event, mock_internal_notify
+        self, mock_log_metric, failed_event, mock_internal_notify, mock_should_not_delete_after_send
     ):
         assert Event.objects.all().count() == 1
 
@@ -93,6 +101,20 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+
+    def test_relay_failed_event_should_delete_after_send(
+        self, mock_log_metric, failed_event, mock_internal_notify, mock_should_delete_after_send
+    ):
+        assert Event.objects.all().count() == 1
+
+        with freeze_time("2022-10-31"):
+            call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_called_once()
+        mock_internal_notify.assert_called_with(
+            failed_event.payload, encoder=DjangoJSONEncoder
+        )
+        assert Event.objects.all().count() == 0
 
     def test_trigger_the_correct_signal_when_resent_successfully(
         self,
@@ -188,7 +210,7 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_has_calls([call_2, call_3, call_1], any_order=False)
 
     def test_relay_message_when_notify_function_is_not_decorated(
-        self, mock_internal_notify
+        self, mock_internal_notify, mock_should_not_delete_after_send
     ):
         event = EventFactory(
             function_signature="jaiminho_django_project.send.notify_without_decorator",
