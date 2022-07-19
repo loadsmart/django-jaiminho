@@ -32,8 +32,12 @@ class Command(BaseCommand):
                 original_fn(
                     event.payload, encoder=encoder, **load_kwargs(event.options)
                 )
-                event.sent_at = timezone.now()
-                event.save()
+
+                if settings.delete_after_send:
+                    event.delete()
+                else:
+                    event.mark_as_sent()
+
                 event_published_by_events_relay.send(
                     sender=original_fn, event_payload=event.payload
                 )
