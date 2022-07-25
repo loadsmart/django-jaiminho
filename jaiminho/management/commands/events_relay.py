@@ -32,22 +32,29 @@ class Command(BaseCommand):
                 original_fn(
                     event.payload, encoder=encoder, **load_kwargs(event.options)
                 )
+                log.info(f"JAIMINHO-EVENTS-RELAY: Event sent. Event {event}")
 
                 if settings.delete_after_send:
                     event.delete()
+                    log.info(
+                        f"JAIMINHO-EVENTS-RELAY: Event deleted after success send. Event: {event}, Payload: {event.payload}"
+                    )
                 else:
                     event.mark_as_sent()
+                    log.info(
+                        f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {event.payload}"
+                    )
 
                 event_published_by_events_relay.send(
                     sender=original_fn, event_payload=event.payload
                 )
 
             except (ModuleNotFoundError, AttributeError) as e:
-                log.warning("Function does not exist anymore: %s", str(e))
+                log.warning(f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}")
                 self._capture_exception(e)
 
             except Exception as e:
-                log.warning(e)
+                log.warning(f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}")
                 original_fn = self._extract_original_func(event)
                 event_failed_to_publish_by_events_relay.send(
                     sender=original_fn, event_payload=event.payload

@@ -50,7 +50,7 @@ class TestEventCleanerCommand:
         assert len(Event.objects.all()) == 6
 
     def test_command_deletes_older_events(
-        self, mocker, older_events, newer_events, not_sent_events
+        self, mocker, older_events, newer_events, not_sent_events, caplog
     ):
         mocker.patch("jaiminho.send.settings.time_to_delete", self.TIME_TO_DELETE)
 
@@ -60,15 +60,17 @@ class TestEventCleanerCommand:
         remaining_events = Event.objects.all()
         assert len(remaining_events) == 4
         assert set(remaining_events) == set([*newer_events, *not_sent_events])
+        assert "JAIMINHO-EVENT-CLEANER: Successfully deleted" in caplog.text
 
     def test_command_doesnt_delete_when_there_are_no_older_events(
-        self, mocker, newer_events, not_sent_events
+        self, mocker, newer_events, not_sent_events, caplog
     ):
         mocker.patch("jaiminho.send.settings.time_to_delete", self.TIME_TO_DELETE)
 
         assert len(Event.objects.all()) == 4
         call_command(validate_event_cleaner.Command())
         assert len(Event.objects.all()) == 4
+        assert "JAIMINHO-EVENT-CLEANER: Did not found events to be deleted" in caplog.text
 
     def test_command_without_time_to_delete_configuration_uses_default_7_days(
         self,
