@@ -243,7 +243,7 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 1
 
     def test_raise_exception_when_module_does_not_exist_anymore(
-        self, mocker, mock_log_warning, mock_capture_exception_fn
+        self, mocker, caplog, mock_capture_exception_fn
     ):
         mocker.patch(
             "jaiminho.send.settings.default_capture_exception",
@@ -257,11 +257,9 @@ class TestValidateEventsRelay:
 
         call_command(validate_events_relay.Command())
 
-        mock_log_warning.assert_called_once()
-        mock_calls = mock_log_warning.call_args[0]
-        assert "Function does not exist anymore" in mock_calls[0]
+        assert "Function does not exist anymore" in caplog.text
         assert (
-            "No module named 'jaiminho_django_project.missing_module'" in mock_calls[1]
+            "No module named 'jaiminho_django_project.missing_module'" in caplog.text
         )
         capture_exception_call = mock_capture_exception_fn.call_args[0][0]
         assert (
@@ -269,7 +267,7 @@ class TestValidateEventsRelay:
         )
 
     def test_raise_exception_when_function_does_not_exist_anymore(
-        self, mock_log_warning
+        self, caplog
     ):
         EventFactory(
             function_signature="jaiminho_django_project.send.missing_notify",
@@ -278,13 +276,8 @@ class TestValidateEventsRelay:
 
         call_command(validate_events_relay.Command())
 
-        mock_log_warning.assert_called_once()
-        mock_calls = mock_log_warning.call_args[0]
-        assert "Function does not exist anymore" in mock_calls[0]
-        assert (
-            "'jaiminho_django_project.send' has no attribute 'missing_notify'"
-            in mock_calls[1]
-        )
+        assert "Function does not exist anymore" in caplog.text
+        assert "jaiminho_django_project.send' has no attribute 'missing_notify'" in caplog.text
 
     def test_works_fine_without_capture_message_fn(
         self,
