@@ -55,7 +55,7 @@ def mock_event_failed_to_publish_signal(mocker):
 
 
 def test_send_success_should_persist_all_events(
-    mock_internal_notify, mock_log_metric, mock_should_not_delete_after_send, mock_should_persist_all_events
+    mock_internal_notify, mock_log_metric, mock_should_not_delete_after_send, mock_should_persist_all_events, caplog
 ):
     payload = {"action": "a", "type": "t", "c": "d"}
     with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -64,6 +64,7 @@ def test_send_success_should_persist_all_events(
     assert Event.objects.all().count() == 1
     mock_log_metric.assert_called_once_with("event-published", payload)
     assert len(callbacks) == 1
+    assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text
 
 
 def test_send_success_should_not_persist_all_events(
@@ -79,7 +80,7 @@ def test_send_success_should_not_persist_all_events(
 
 
 def test_send_success_should_delete_after_send(
-    mock_internal_notify, mock_log_metric, mock_should_persist_all_events, mock_should_delete_after_send
+    mock_internal_notify, mock_log_metric, mock_should_persist_all_events, mock_should_delete_after_send, caplog
 ):
     payload = {"action": "a", "type": "t", "c": "d"}
     with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -92,9 +93,10 @@ def test_send_success_should_delete_after_send(
     assert Event.objects.all().count() == 0
     mock_log_metric.assert_called_once_with("event-published", payload)
     assert len(callbacks) == 1
+    assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
 
 
-def test_send_success_with_encoder(mock_log_metric, mock_internal_notify, mock_should_not_delete_after_send, mock_should_persist_all_events):
+def test_send_success_with_encoder(mock_log_metric, mock_internal_notify, mock_should_not_delete_after_send, mock_should_persist_all_events, caplog):
     payload = {"action": "a", "type": "t", "c": "d"}
 
     with freeze_time("2022-01-01"):
@@ -109,9 +111,11 @@ def test_send_success_with_encoder(mock_log_metric, mock_internal_notify, mock_s
     assert event.options == ""
     assert event.encoder == "django.core.serializers.json.DjangoJSONEncoder"
     assert event.function_signature == "jaiminho_django_project.send.notify"
+    assert "JAIMINHO-ON-COMMIT-HOOK: Event sent successfully" in caplog.text
+    assert "JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured" in caplog.text
 
 
-def test_send_success_when_should_not_delete_after_send(mock_log_metric, mock_internal_notify, mock_should_not_delete_after_send, mock_should_persist_all_events):
+def test_send_success_when_should_not_delete_after_send(mock_log_metric, mock_internal_notify, mock_should_not_delete_after_send, mock_should_persist_all_events, caplog):
     payload = {"action": "a", "type": "t", "c": "d"}
 
     with freeze_time("2022-01-01"):
@@ -122,6 +126,7 @@ def test_send_success_when_should_not_delete_after_send(mock_log_metric, mock_in
     assert Event.objects.all().count() == 1
     event = Event.objects.first()
     assert event.sent_at == datetime(2022, 1, 1, tzinfo=UTC)
+    assert "JAIMINHO-ON-COMMIT-HOOK: Event marked as sent" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -129,7 +134,7 @@ def test_send_success_when_should_not_delete_after_send(mock_log_metric, mock_in
     ((True, False), (True, False))
 )
 def test_send_fail(
-    mock_log_metric, mock_internal_notify_fail, persist_all_events, delete_after_send, mocker
+    mock_log_metric, mock_internal_notify_fail, persist_all_events, delete_after_send, mocker, caplog
 ):
     mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
     mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
@@ -145,6 +150,7 @@ def test_send_fail(
     assert Event.objects.first().sent_at is None
     mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
     assert len(callbacks) == 1
+    assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
 
 
 @pytest.mark.parametrize(
