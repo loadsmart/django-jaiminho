@@ -10,4 +10,5 @@ wheel==0.36.2
 factory-boy~=3.2.0
 freezegun~=1.2.1
 smartevents  --index-url=${PIP_EXTRA_INDEX_URL}
+dill
 ipdb

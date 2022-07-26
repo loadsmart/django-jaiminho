@@ -30,6 +30,7 @@ def load_argument(argument):
         return key, getattr(module, class_name)
 
 
+# TODO: REMOVE
 def load_kwargs(kwargs_string):
     if not kwargs_string:
         return {}

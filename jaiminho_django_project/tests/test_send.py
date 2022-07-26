@@ -110,7 +110,7 @@ def test_send_success_with_encoder(mock_log_metric, mock_internal_notify, mock_s
     event = Event.objects.first()
     assert event.options == ""
     assert event.encoder == "django.core.serializers.json.DjangoJSONEncoder"
-    assert event.function_signature == "jaiminho_django_project.send.notify"
+    assert event.function == "jaiminho_django_project.send.notify"
     assert "JAIMINHO-ON-COMMIT-HOOK: Event sent successfully" in caplog.text
     assert "JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured" in caplog.text
 
@@ -209,7 +209,7 @@ def test_send_fail_with_parameters(mock_internal_notify_fail, mock_should_persis
     assert event.sent_at is None
     assert event.options == ""
     assert event.encoder == "jaiminho_django_project.tests.test_send.Encoder"
-    assert event.function_signature == "jaiminho_django_project.send.notify"
+    assert event.function == "jaiminho_django_project.send.notify"
 
 
 @pytest.mark.parametrize(
@@ -227,4 +227,4 @@ def test_send_fail_with_encoder_default(mock_internal_notify_fail, mock_should_p
     assert event.sent_at is None
     assert event.options == ""
     assert event.encoder == "django.core.serializers.json.DjangoJSONEncoder"
-    assert event.function_signature == "jaiminho_django_project.send.notify"
+    assert event.function == "jaiminho_django_project.send.notify"
