@@ -96,7 +96,7 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
-            failed_event.payload, encoder=DjangoJSONEncoder
+            failed_event.message, encoder=DjangoJSONEncoder
         )
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
@@ -112,7 +112,7 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
-            failed_event.payload, encoder=DjangoJSONEncoder
+            failed_event.message, encoder=DjangoJSONEncoder
         )
         assert Event.objects.all().count() == 0
 
@@ -128,7 +128,7 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_called_once()
         mock_event_published_signal.assert_not_called()
         mock_log_metric.assert_called_once_with(
-            "event-published-through-outbox", failed_event.payload
+            "event-published-through-outbox", failed_event.message
         )
 
     def test_trigger_the_correct_signal_when_resent_failed(
@@ -143,7 +143,7 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_called_once()
         mock_event_failed_to_publish_signal.assert_not_called()
         mock_log_metric.assert_called_once_with(
-            "event-failed-to-publish-through-outbox", failed_event.payload
+            "event-failed-to-publish-through-outbox", failed_event.message
         )
 
     def test_doest_not_relay_when_does_not_exist_failed_events(
@@ -176,8 +176,8 @@ class TestValidateEventsRelay:
 
         call_command(validate_events_relay.Command())
 
-        call_1 = call(event_1.payload, encoder=DjangoJSONEncoder, a="1")
-        call_2 = call(event_2.payload, encoder=DjangoJSONEncoder, a="2")
+        call_1 = call(event_1.message, encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(event_2.message, encoder=DjangoJSONEncoder, a="2")
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
 
     def test_events_ordered_by_created_by_relay(self, mock_internal_notify):
@@ -204,9 +204,9 @@ class TestValidateEventsRelay:
 
         call_command(validate_events_relay.Command())
 
-        call_1 = call(event_1.payload, encoder=DjangoJSONEncoder, a="1")
-        call_2 = call(event_2.payload, encoder=DjangoJSONEncoder, a="2")
-        call_3 = call(event_3.payload, encoder=DjangoJSONEncoder, a="3")
+        call_1 = call(event_1.message, encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(event_2.message, encoder=DjangoJSONEncoder, a="2")
+        call_3 = call(event_3.message, encoder=DjangoJSONEncoder, a="3")
         mock_internal_notify.assert_has_calls([call_2, call_3, call_1], any_order=False)
 
     def test_relay_message_when_notify_function_is_not_decorated(
@@ -222,7 +222,7 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
-            event.payload, encoder=DjangoJSONEncoder
+            event.message, encoder=DjangoJSONEncoder
         )
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]

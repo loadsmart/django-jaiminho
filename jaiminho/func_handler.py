@@ -1,6 +1,7 @@
 from importlib import import_module
 
 
+# TODO: REMOVE
 def format_func_path(fn, default=None):
     return f"{fn.__module__}.{fn.__name__}" if fn else default
 
