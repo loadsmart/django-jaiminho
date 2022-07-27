@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
 try:
-    jaiminho_settings = getattr(settings, "jaiminho")
+    jaiminho_settings = getattr(settings, "JAIMINHO_CONFIG")
 except AttributeError:
     jaiminho_settings = {}
 
