@@ -154,6 +154,26 @@ def test_send_fail(
 
 
 @pytest.mark.parametrize(
+    "exception", (AssertionError, AttributeError, Exception, SystemError, SystemExit)
+)
+def test_send_fail_handles_multiple_exceptions_type(
+    mock_log_metric, mock_internal_notify_fail, exception
+):
+    mock_internal_notify_fail.side_effect = exception
+
+    payload = {"action": "a", "type": "t", "c": "d"}
+    with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
+        jaiminho_django_project.send.notify(payload)
+
+    mock_internal_notify_fail.assert_called_once_with(
+        payload, encoder=DjangoJSONEncoder
+    )
+
+    mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
+    assert len(callbacks) == 1
+
+
+@pytest.mark.parametrize(
     ("delete_after_send", "persist_all_events"),
     ((True, False), (True, False))
 )
