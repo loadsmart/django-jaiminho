@@ -1,7 +1,6 @@
 import logging
 from functools import wraps
 
-from django.utils import timezone
 from django.db import transaction
 
 from jaiminho.func_handler import format_func_path
@@ -16,9 +15,11 @@ logger = logging.getLogger(__name__)
 def on_commit_hook(payload, encoder, func, event, event_data, **kwargs):
     try:
         func(payload, encoder=encoder, **kwargs)
-        logger.info(f"JAIMINHO-ON-COMMIT-HOOK: Event sent successfully. Payload: {payload}")
+        logger.info(
+            f"JAIMINHO-ON-COMMIT-HOOK: Event sent successfully. Payload: {payload}"
+        )
         event_published.send(sender=func, event_payload=payload)
-    except Exception as exc:
+    except BaseException as exc:
         if not event:
             event = Event.objects.create(
                 type=event_data["type"],
@@ -29,7 +30,10 @@ def on_commit_hook(payload, encoder, func, event, event_data, **kwargs):
                 options=event_data["options"],
             )
 
-        logger.warning(f"JAIMINHO-ON-COMMIT-HOOK: Event failed to be published. Event: {event}, Payload: {payload}")
+        logger.warning(
+            f"JAIMINHO-ON-COMMIT-HOOK: Event failed to be published. Event: {event}, Payload: {payload}, "
+            f"Exception: {exc}"
+        )
         event_failed_to_publish.send(sender=func, event_payload=payload)
         return
 
@@ -65,7 +69,9 @@ def save_to_outbox(func):
                 function_signature=func_signature,
                 options=options,
             )
-            logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {payload}")
+            logger.info(
+                f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {payload}"
+            )
 
         on_commit_hook_kwargs = {
             "payload": payload,
@@ -80,10 +86,12 @@ def save_to_outbox(func):
                 "options": options,
             },
             "event": event,
-            **kwargs
+            **kwargs,
         }
         transaction.on_commit(lambda: on_commit_hook(**on_commit_hook_kwargs))
-        logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}")
+        logger.info(
+            f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}"
+        )
 
     inner.original_func = func
     return inner
