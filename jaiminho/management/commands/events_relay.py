@@ -1,5 +1,5 @@
 import logging
-import dill as pickle
+import dill
 
 from django.core.management import BaseCommand
 
@@ -24,8 +24,8 @@ class Command(BaseCommand):
             return
 
         for event in failed_events:
-            message = pickle.loads(event.message)
-            kwargs = pickle.loads(event.kwargs) if event.kwargs else {}
+            message = dill.loads(event.message)
+            kwargs = dill.loads(event.kwargs) if event.kwargs else {}
             try:
                 original_fn = self._extract_original_func(event)
                 original_fn(message, **kwargs)
@@ -64,6 +64,6 @@ class Command(BaseCommand):
             capture_exception(exception)
 
     def _extract_original_func(self, event):
-        fn = pickle.loads(event.function)
+        fn = dill.loads(event.function)
         original_fn = getattr(fn, "original_func", fn)
         return original_fn
