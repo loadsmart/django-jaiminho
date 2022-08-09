@@ -1,6 +1,6 @@
 import logging
 from functools import wraps
-import dill as pickle
+import dill
 
 from django.db import transaction
 
@@ -34,14 +34,14 @@ def on_commit_hook(payload, func, event, event_data, **kwargs):
 
 
 def save_to_outbox(func):
-    func_signature = pickle.dumps(func)
+    func_signature = dill.dumps(func)
 
     @wraps(func)
     def inner(payload, **kwargs):
         event_data = {
-            "message": pickle.dumps(payload),
+            "message": dill.dumps(payload),
             "function": func_signature,
-            "kwargs": pickle.dumps(kwargs) if bool(kwargs) else None,
+            "kwargs": dill.dumps(kwargs) if bool(kwargs) else None,
         }
 
         event = None
