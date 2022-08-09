@@ -25,7 +25,7 @@ class Command(BaseCommand):
 
         for event in failed_events:
             message = pickle.loads(event.message)
-            kwargs = pickle.loads(event.kwargs)
+            kwargs = pickle.loads(event.kwargs) if event.kwargs else {}
             try:
                 original_fn = self._extract_original_func(event)
                 original_fn(message, **kwargs)
