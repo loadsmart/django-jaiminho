@@ -165,9 +165,7 @@ def test_send_fail_handles_multiple_exceptions_type(
     with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
         jaiminho_django_project.send.notify(payload)
 
-    mock_internal_notify_fail.assert_called_once_with(
-        payload, encoder=DjangoJSONEncoder
-    )
+    mock_internal_notify_fail.assert_called_once_with(payload)
 
     mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
     assert len(callbacks) == 1
