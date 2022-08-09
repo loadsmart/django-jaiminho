@@ -2,16 +2,17 @@ from datetime import datetime
 from unittest import mock
 from unittest.mock import call
 
+import dill
 import pytest
 from dateutil.tz import UTC
 from django.core.management import call_command
 from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 
-from jaiminho.kwargs_handler import format_kwargs
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.management.commands import validate_events_relay
+from jaiminho_django_project.send import notify, notify_without_decorator
 
 pytestmark = pytest.mark.django_db
 
@@ -62,15 +63,13 @@ class TestValidateEventsRelay:
     @pytest.fixture
     def failed_event(self):
         return EventFactory(
-            function_signature="jaiminho_django_project.send.notify",
-            encoder="django.core.serializers.json.DjangoJSONEncoder",
+            function=dill.dumps(notify),
         )
 
     @pytest.fixture
     def successful_event(self):
         return EventFactory(
-            function_signature="jaiminho_django_project.send.notify",
-            encoder="django.core.serializers.json.DjangoJSONEncoder",
+            function=dill.dumps(notify),
             sent_at=datetime(2022, 2, 19, tzinfo=UTC),
         )
 
@@ -87,7 +86,11 @@ class TestValidateEventsRelay:
         return mocker.patch("jaiminho.send.settings.delete_after_send", False)
 
     def test_relay_failed_event(
-        self, mock_log_metric, failed_event, mock_internal_notify, mock_should_not_delete_after_send
+        self,
+        mock_log_metric,
+        failed_event,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
     ):
         assert Event.objects.all().count() == 1
 
@@ -95,15 +98,17 @@ class TestValidateEventsRelay:
             call_command(validate_events_relay.Command())
 
         mock_internal_notify.assert_called_once()
-        mock_internal_notify.assert_called_with(
-            failed_event.message, encoder=DjangoJSONEncoder
-        )
+        mock_internal_notify.assert_called_with(dill.loads(failed_event.message))
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     def test_relay_failed_event_should_delete_after_send(
-        self, mock_log_metric, failed_event, mock_internal_notify, mock_should_delete_after_send
+        self,
+        mock_log_metric,
+        failed_event,
+        mock_internal_notify,
+        mock_should_delete_after_send,
     ):
         assert Event.objects.all().count() == 1
 
@@ -112,7 +117,7 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
-            failed_event.message, encoder=DjangoJSONEncoder
+            dill.loads(failed_event.message),
         )
         assert Event.objects.all().count() == 0
 
@@ -128,7 +133,7 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_called_once()
         mock_event_published_signal.assert_not_called()
         mock_log_metric.assert_called_once_with(
-            "event-published-through-outbox", failed_event.message
+            "event-published-through-outbox", dill.loads(failed_event.message)
         )
 
     def test_trigger_the_correct_signal_when_resent_failed(
@@ -143,7 +148,7 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_called_once()
         mock_event_failed_to_publish_signal.assert_not_called()
         mock_log_metric.assert_called_once_with(
-            "event-failed-to-publish-through-outbox", failed_event.message
+            "event-failed-to-publish-through-outbox", dill.loads(failed_event.message)
         )
 
     def test_doest_not_relay_when_does_not_exist_failed_events(
@@ -161,60 +166,51 @@ class TestValidateEventsRelay:
         self,
         mock_internal_notify_fail,
     ):
-        function_signature = "jaiminho_django_project.send.notify"
-        encoder = "django.core.serializers.json.DjangoJSONEncoder"
         event_1 = EventFactory(
-            function_signature=function_signature,
-            encoder=encoder,
-            options=format_kwargs(a="1"),
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
         )
         event_2 = EventFactory(
-            function_signature=function_signature,
-            encoder=encoder,
-            options=format_kwargs(a="2"),
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
         )
 
         call_command(validate_events_relay.Command())
 
-        call_1 = call(event_1.message, encoder=DjangoJSONEncoder, a="1")
-        call_2 = call(event_2.message, encoder=DjangoJSONEncoder, a="2")
+        call_1 = call(dill.loads(event_1.message), encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(dill.loads(event_2.message), encoder=DjangoJSONEncoder, a="2")
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
 
     def test_events_ordered_by_created_by_relay(self, mock_internal_notify):
-        function_signature = "jaiminho_django_project.send.notify"
-        encoder = "django.core.serializers.json.DjangoJSONEncoder"
         with freeze_time("2022-01-03"):
             event_1 = EventFactory(
-                function_signature=function_signature,
-                encoder=encoder,
-                options=format_kwargs(a="1"),
+                function=dill.dumps(notify),
+                kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
             )
         with freeze_time("2022-01-01"):
             event_2 = EventFactory(
-                function_signature=function_signature,
-                encoder=encoder,
-                options=format_kwargs(a="2"),
+                function=dill.dumps(notify),
+                kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
             )
         with freeze_time("2022-01-02"):
             event_3 = EventFactory(
-                function_signature=function_signature,
-                encoder=encoder,
-                options=format_kwargs(a="3"),
+                function=dill.dumps(notify),
+                kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "3"}),
             )
 
         call_command(validate_events_relay.Command())
 
-        call_1 = call(event_1.message, encoder=DjangoJSONEncoder, a="1")
-        call_2 = call(event_2.message, encoder=DjangoJSONEncoder, a="2")
-        call_3 = call(event_3.message, encoder=DjangoJSONEncoder, a="3")
+        call_1 = call(dill.loads(event_1.message), encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(dill.loads(event_2.message), encoder=DjangoJSONEncoder, a="2")
+        call_3 = call(dill.loads(event_3.message), encoder=DjangoJSONEncoder, a="3")
         mock_internal_notify.assert_has_calls([call_2, call_3, call_1], any_order=False)
 
     def test_relay_message_when_notify_function_is_not_decorated(
         self, mock_internal_notify, mock_should_not_delete_after_send
     ):
         event = EventFactory(
-            function_signature="jaiminho_django_project.send.notify_without_decorator",
-            encoder="django.core.serializers.json.DjangoJSONEncoder",
+            function=dill.dumps(notify_without_decorator),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder}),
         )
 
         with freeze_time("2022-10-31"):
@@ -222,7 +218,7 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
-            event.message, encoder=DjangoJSONEncoder
+            dill.loads(event.message), encoder=DjangoJSONEncoder
         )
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
@@ -245,39 +241,33 @@ class TestValidateEventsRelay:
     def test_raise_exception_when_module_does_not_exist_anymore(
         self, mocker, caplog, mock_capture_exception_fn
     ):
+        missing_module = b"\x80\x04\x95/\x00\x00\x00\x00\x00\x00\x00\x8c jaiminho_django_project.send_two\x94\x8c\x06notify\x94\x93\x94."
         mocker.patch(
             "jaiminho.send.settings.default_capture_exception",
             mock_capture_exception_fn,
         )
 
-        EventFactory(
-            function_signature="jaiminho_django_project.missing_module.notify",
-            encoder="django.core.serializers.json.DjangoJSONEncoder",
-        )
+        EventFactory(function=missing_module)
 
         call_command(validate_events_relay.Command())
 
         assert "Function does not exist anymore" in caplog.text
-        assert (
-            "No module named 'jaiminho_django_project.missing_module'" in caplog.text
-        )
+        assert "No module named 'jaiminho_django_project.send_two'" in caplog.text
         capture_exception_call = mock_capture_exception_fn.call_args[0][0]
-        assert (
-                "No module named 'jaiminho_django_project.missing_module'" == str(capture_exception_call)
+        assert "No module named 'jaiminho_django_project.send_two'" == str(
+            capture_exception_call
         )
 
-    def test_raise_exception_when_function_does_not_exist_anymore(
-        self, caplog
-    ):
+    def test_raise_exception_when_function_does_not_exist_anymore(self, caplog):
+        missing_function = b"\x80\x04\x955\x00\x00\x00\x00\x00\x00\x00\x8c\x1cjaiminho_django_project.send\x94\x8c\x10missing_function\x94\x93\x94."
         EventFactory(
-            function_signature="jaiminho_django_project.send.missing_notify",
-            encoder="django.core.serializers.json.DjangoJSONEncoder",
+            function=missing_function,
         )
 
         call_command(validate_events_relay.Command())
 
         assert "Function does not exist anymore" in caplog.text
-        assert "jaiminho_django_project.send' has no attribute 'missing_notify'" in caplog.text
+        assert "Can't get attribute 'missing_function' on" in caplog.text
 
     def test_works_fine_without_capture_message_fn(
         self,

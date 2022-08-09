@@ -41,7 +41,7 @@ def save_to_outbox(func):
         event_data = {
             "message": pickle.dumps(payload),
             "function": func_signature,
-            "kwargs": pickle.dumps(kwargs),
+            "kwargs": pickle.dumps(kwargs) if bool(kwargs) else None,
         }
 
         event = None
