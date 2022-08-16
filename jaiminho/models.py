@@ -1,19 +1,14 @@
 from django.db import models
 from django.utils import timezone
 
-try:
-    from django.db.models import JSONField
-except ImportError:
-    from django.contrib.postgres.fields import JSONField
+
+MAX_BYTES = 65535
 
 
 class Event(models.Model):
-    type = models.CharField(max_length=64)
-    action = models.CharField(max_length=64)
-    payload = JSONField()
-    encoder = models.CharField(max_length=255, null=True)
-    function_signature = models.CharField(max_length=255, null=True)
-    options = models.TextField(blank=True)
+    message = models.BinaryField(null=True, max_length=MAX_BYTES)
+    function = models.BinaryField(null=True, max_length=MAX_BYTES)
+    kwargs = models.BinaryField(null=True, max_length=MAX_BYTES)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True)
 
@@ -22,4 +17,4 @@ class Event(models.Model):
         self.save()
 
     def __str__(self):
-        return f"Event(id={self.id}, type={self.type}, action={self.action}"
+        return f"Event(id={self.id})"
