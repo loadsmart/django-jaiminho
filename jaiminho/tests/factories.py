@@ -9,13 +9,8 @@ from jaiminho.models import Event
 
 class EventFactory(factory.django.DjangoModelFactory):
 
-    type = "generic_event"
-    action = "created"
-    payload = factory.LazyAttribute(
-        lambda _: {
-            "generic_object": {"uuid": str(uuid.uuid4())},
-            "action": "created",
-        }
+    message = factory.LazyAttribute(
+        lambda _: b"\x80\x04\x95\n\x00\x00\x00\x00\x00\x00\x00}\x94\x8c\x01a\x94K\x01s."
     )
 
     class Meta:
