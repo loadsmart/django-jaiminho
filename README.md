@@ -26,7 +26,8 @@ Configure jaiminho options in Django settings.py:
 JAIMINHO_CONFIG = {
     "PERSIST_ALL_EVENTS": False,
     "DELETE_AFTER_SEND": True,
-    "DEFAULT_ENCODER": DjangoJSONEncoder
+    "DEFAULT_ENCODER": DjangoJSONEncoder,
+    "PUBLISH_STRATEGY": "performance"
     }
 
 ```
@@ -35,9 +36,10 @@ JAIMINHO_CONFIG = {
 
 ### Configuration options
 
-- PERSIST_ALL_EVENTS - Saves all events and not only the ones that fail, default is False
+- PERSIST_ALL_EVENTS - Saves all events and not only the ones that fail, default is False. Only applicable for performance PUBLISH_STRATEGY since all events needs to be stored on keep-order strategy. 
 - DELETE_AFTER_SEND - Delete the event from the outbox table immediately after a successful send
 - DEFAULT_ENCODER - Default Encoder for the payload (overwritable in the function call)
+- PUBLISH_STRATEGY - Which strategy use to publish events (performance, keep-order)
 
 
 ### Signals
