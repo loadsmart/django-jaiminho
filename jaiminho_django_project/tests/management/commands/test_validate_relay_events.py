@@ -23,14 +23,6 @@ class TestValidateEventsRelay:
         return mocker.patch("jaiminho_django_project.app.signals.log_metric")
 
     @pytest.fixture
-    def mock_log_info(self, mocker):
-        return mocker.patch("jaiminho.management.commands.events_relay.log.info")
-
-    @pytest.fixture
-    def mock_log_warning(self, mocker):
-        return mocker.patch("jaiminho.management.commands.events_relay.log.warning")
-
-    @pytest.fixture
     def mock_capture_exception(self, mocker):
         return mocker.patch(
             "jaiminho_django_project.management.commands.validate_events_relay.Command.capture_message_fn"
@@ -152,14 +144,14 @@ class TestValidateEventsRelay:
         )
 
     def test_doest_not_relay_when_does_not_exist_failed_events(
-        self, successful_event, mock_log_info
+        self, successful_event, caplog
     ):
         assert Event.objects.filter(sent_at__isnull=True).count() == 0
         assert Event.objects.filter(sent_at__isnull=False).count() == 1
 
         call_command(validate_events_relay.Command())
 
-        mock_log_info.assert_called_with("No failed events found.")
+        assert "No failed events found." in caplog.text
         assert Event.objects.all().count() == 1
 
     def test_relay_every_event_even_at_lest_one_fail(
