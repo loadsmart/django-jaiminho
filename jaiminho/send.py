@@ -37,10 +37,9 @@ def on_commit_hook(payload, func, event, event_data, **kwargs):
 
 
 def save_to_outbox(func):
-    func_signature = dill.dumps(func)
-
     @wraps(func)
     def inner(payload, **kwargs):
+        func_signature = dill.dumps(func)
         event_data = {
             "message": dill.dumps(payload),
             "function": func_signature,
