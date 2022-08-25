@@ -79,7 +79,7 @@ class TestValidateEventsRelay:
         return mocker.patch("jaiminho.send.settings.delete_after_send", False)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_relay_failed_event(
         self,
@@ -104,7 +104,7 @@ class TestValidateEventsRelay:
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_relay_failed_event_should_delete_after_send(
         self,
@@ -128,7 +128,7 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 0
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_trigger_the_correct_signal_when_resent_successfully(
         self,
@@ -150,7 +150,7 @@ class TestValidateEventsRelay:
         )
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_trigger_the_correct_signal_when_resent_failed(
         self,
@@ -172,7 +172,7 @@ class TestValidateEventsRelay:
         )
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_doest_not_relay_when_does_not_exist_failed_events(
         self, successful_event, caplog, publish_strategy, mocker,
@@ -187,7 +187,7 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 1
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
     )
     def test_relay_every_event_even_at_lest_one_fail(
         self,
@@ -242,7 +242,7 @@ class TestValidateEventsRelay:
         assert "Events relaying are stuck due to failing Event" in caplog.text
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_events_ordered_by_created_by_relay(self, mock_internal_notify, publish_strategy, mocker):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
@@ -271,7 +271,7 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_has_calls([call_2, call_3, call_1], any_order=False)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_relay_message_when_notify_function_is_not_decorated(
         self, mock_internal_notify, mock_should_not_delete_after_send, publish_strategy, mocker
@@ -295,7 +295,7 @@ class TestValidateEventsRelay:
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_dont_create_another_event_when_relay_fails(
         self, failed_event, mock_internal_notify_fail, mock_capture_exception_fn, publish_strategy, mocker
@@ -313,7 +313,7 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 1
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_raise_exception_when_module_does_not_exist_anymore(
         self, mocker, caplog, mock_capture_exception_fn, publish_strategy
@@ -337,7 +337,7 @@ class TestValidateEventsRelay:
         )
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_raise_exception_when_function_does_not_exist_anymore(self, caplog, publish_strategy, mocker):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
@@ -353,7 +353,7 @@ class TestValidateEventsRelay:
         assert "Can't get attribute 'missing_function' on" in caplog.text
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_works_fine_without_capture_message_fn(
         self,
@@ -370,7 +370,7 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_called_once()
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     def test_works_with_custom_capture_message_fn(
         self, mocker, failed_event, mock_internal_notify_fail, publish_strategy

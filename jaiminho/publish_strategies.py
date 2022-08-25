@@ -24,7 +24,7 @@ class BaseStrategy(ABC):
         raise NotImplementedError
 
 
-class PerformanceStrategy(BaseStrategy):
+class PublishOnCommitStrategy(BaseStrategy):
     event_relayer = EventRelayer(stuck_on_error=False)
 
     def publish(self, payload, kwargs, func):
@@ -76,7 +76,7 @@ class KeepOrderStrategy(BaseStrategy):
 
 def create_publish_strategy(strategy_type):
     strategy_map = {
-        PublishStrategyType.PERFORMANCE: PerformanceStrategy,
+        PublishStrategyType.PUBLISH_ON_COMMIT: PublishOnCommitStrategy,
         PublishStrategyType.KEEP_ORDER: KeepOrderStrategy
     }
 
