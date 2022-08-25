@@ -57,7 +57,7 @@ def mock_event_failed_to_publish_signal(mocker):
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
 )
 def test_send_success_should_persist_all_events(
     mock_internal_notify,
@@ -107,7 +107,7 @@ def test_send_success_should_not_send_event_when_keep_order_strategy(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 def test_send_success_should_publish_event(
     mock_internal_notify,
@@ -131,7 +131,7 @@ def test_send_success_should_publish_event(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 def test_send_success_should_not_persist_all_events(
     mock_internal_notify,
@@ -151,7 +151,7 @@ def test_send_success_should_not_persist_all_events(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 def test_send_success_should_delete_after_send(
     mock_internal_notify,
@@ -179,7 +179,7 @@ def test_send_success_should_delete_after_send(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 def test_send_success_when_should_not_delete_after_send(
     mock_log_metric,
@@ -206,7 +206,7 @@ def test_send_success_when_should_not_delete_after_send(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 @pytest.mark.parametrize(
     ("persist_all_events", "delete_after_send"), ((True, False), (True, False))
@@ -237,7 +237,7 @@ def test_send_fail(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 @pytest.mark.parametrize(
     "exception", (AssertionError, AttributeError, Exception, SystemError, SystemExit)
@@ -260,7 +260,7 @@ def test_send_fail_handles_multiple_exceptions_type(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 @pytest.mark.parametrize(
     ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
@@ -285,7 +285,7 @@ def test_send_trigger_event_published_signal(
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 @pytest.mark.parametrize(
     ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
@@ -321,7 +321,7 @@ def encoder():
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PERFORMANCE,)
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
 )
 @pytest.mark.parametrize(
     ("delete_after_send", "persist_all_events"), ((True, False), (True, False))

@@ -8,7 +8,7 @@ from jaiminho.constants import PublishStrategyType
 
 class TestSettings:
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PERFORMANCE, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
     @pytest.mark.parametrize(
         ("persist_all_events", "delete_after_send"), ((True, False), (True, False))
