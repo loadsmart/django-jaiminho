@@ -24,11 +24,11 @@ def create_event_data(func_signature, kwargs, payload):
 
 class BaseStrategy(ABC):
     @abstractmethod
-    def publish(self, **kwargs):
+    def publish(self, payload, kwargs, func):
         raise NotImplementedError
 
     @abstractmethod
-    def relay(self, **kwargs):
+    def relay(self):
         raise NotImplementedError
 
 
@@ -56,7 +56,7 @@ class PublishOnCommitStrategy(BaseStrategy):
             f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}"
         )
 
-    def relay(self, **kwargs):
+    def relay(self):
         self.event_relayer.relay()
 
 
@@ -69,7 +69,7 @@ class KeepOrderStrategy(BaseStrategy):
         event = Event.objects.create(**event_data)
         logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {payload}")
 
-    def relay(self, **kwargs):
+    def relay(self):
         self.event_relayer.relay()
 
 
