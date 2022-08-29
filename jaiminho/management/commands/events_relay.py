@@ -1,69 +1,43 @@
 import logging
-import dill
+from time import sleep
 
 from django.core.management import BaseCommand
 
 from jaiminho import settings
-from jaiminho.models import Event
-from jaiminho.signals import (
-    event_published_by_events_relay,
-    event_failed_to_publish_by_events_relay,
-)
+from jaiminho.send import create_publish_strategy
 
 log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **options):
-        failed_events = Event.objects.filter(sent_at__isnull=True).order_by(
-            "created_at"
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "run_in_loop",
+            nargs="?",
+            type=bool,
+            default=False,
+            help="Define if command should run in loop or just once"
+        )
+        parser.add_argument(
+            "loop_interval",
+            nargs="?",
+            type=float,
+            default=1,
+            help="Define the sleep interval (in seconds) between each loop"
         )
 
-        if not failed_events:
-            log.info("No failed events found.")
-            return
+    def handle(self, *args, **options):
+        publish_strategy = create_publish_strategy(settings.publish_strategy)
 
-        for event in failed_events:
-            message = dill.loads(event.message)
-            kwargs = dill.loads(event.kwargs) if event.kwargs else {}
-            try:
-                original_fn = self._extract_original_func(event)
-                original_fn(message, **kwargs)
-                log.info(f"JAIMINHO-EVENTS-RELAY: Event sent. Event {event}")
+        if options["run_in_loop"]:
+            log.info("EVENTS-RELAY-COMMAND: Started to relay events in loop mode")
 
-                if settings.delete_after_send:
-                    event.delete()
-                    log.info(
-                        f"JAIMINHO-EVENTS-RELAY: Event deleted after success send. Event: {event}, Payload: {message}"
-                    )
-                else:
-                    event.mark_as_sent()
-                    log.info(
-                        f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {message}"
-                    )
+            while True:
+                publish_strategy.relay()
+                sleep(options["loop_interval"])
+                log.info("EVENTS-RELAY-COMMAND: Relay iteration finished")
 
-                event_published_by_events_relay.send(
-                    sender=original_fn, event_payload=message
-                )
-
-            except (ModuleNotFoundError, AttributeError) as e:
-                log.warning(f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}")
-                self._capture_exception(e)
-
-            except Exception as e:
-                log.warning(f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}")
-                original_fn = self._extract_original_func(event)
-                event_failed_to_publish_by_events_relay.send(
-                    sender=original_fn, event_payload=message
-                )
-                self._capture_exception(e)
-
-    def _capture_exception(self, exception):
-        capture_exception = settings.default_capture_exception
-        if capture_exception:
-            capture_exception(exception)
-
-    def _extract_original_func(self, event):
-        fn = dill.loads(event.function)
-        original_fn = getattr(fn, "original_func", fn)
-        return original_fn
+        else:
+            log.info("EVENTS-RELAY-COMMAND: Started to relay events only once")
+            publish_strategy.relay()
+            log.info("EVENTS-RELAY-COMMAND: Relay finished")
