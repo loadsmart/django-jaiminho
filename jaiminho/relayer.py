@@ -68,7 +68,7 @@ class EventRelayer:
                     )
                     return
 
-            except Exception as e:
+            except BaseException as e:
                 logger.warning(
                     f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}")
                 original_fn = _extract_original_func(event)
