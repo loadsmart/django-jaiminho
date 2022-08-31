@@ -57,7 +57,8 @@ def mock_event_failed_to_publish_signal(mocker):
 
 
 @pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+    "publish_strategy",
+    (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
 )
 def test_send_success_should_persist_all_events(
     mock_internal_notify,
@@ -78,9 +79,7 @@ def test_send_success_should_persist_all_events(
     assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
 @pytest.mark.parametrize(
     ("persist_all_events", "delete_after_send"), ((True, False), (True, False))
 )
@@ -106,9 +105,7 @@ def test_send_success_should_not_send_event_when_keep_order_strategy(
     assert not mock_internal_notify.called
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 def test_send_success_should_publish_event(
     mock_internal_notify,
     mock_log_metric,
@@ -130,15 +127,13 @@ def test_send_success_should_publish_event(
     mock_log_metric.assert_called_once_with("event-published", payload)
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 def test_send_success_should_not_persist_all_events(
     mock_internal_notify,
     mock_log_metric,
     mock_should_not_delete_after_send,
     publish_strategy,
-    mocker
+    mocker,
 ):
     mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
     payload = {"action": "a", "type": "t", "c": "d"}
@@ -150,9 +145,7 @@ def test_send_success_should_not_persist_all_events(
     assert len(callbacks) == 1
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 def test_send_success_should_delete_after_send(
     mock_internal_notify,
     mock_log_metric,
@@ -160,7 +153,7 @@ def test_send_success_should_delete_after_send(
     mock_should_delete_after_send,
     caplog,
     publish_strategy,
-    mocker
+    mocker,
 ):
     mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
@@ -178,9 +171,7 @@ def test_send_success_should_delete_after_send(
     assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 def test_send_success_when_should_not_delete_after_send(
     mock_log_metric,
     mock_internal_notify,
@@ -188,7 +179,7 @@ def test_send_success_when_should_not_delete_after_send(
     mock_should_persist_all_events,
     caplog,
     publish_strategy,
-    mocker
+    mocker,
 ):
     mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
@@ -205,9 +196,7 @@ def test_send_success_when_should_not_delete_after_send(
     assert "JAIMINHO-ON-COMMIT-HOOK: Event marked as sent" in caplog.text
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 @pytest.mark.parametrize(
     ("persist_all_events", "delete_after_send"), ((True, False), (True, False))
 )
@@ -236,9 +225,7 @@ def test_send_fail(
     assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 @pytest.mark.parametrize(
     "exception", (AssertionError, AttributeError, Exception, SystemError, SystemExit)
 )
@@ -259,9 +246,7 @@ def test_send_fail_handles_multiple_exceptions_type(
     assert len(callbacks) == 1
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 @pytest.mark.parametrize(
     ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
 )
@@ -272,21 +257,28 @@ def test_send_trigger_event_published_signal(
     mocker,
     delete_after_send,
     persist_all_events,
-    publish_strategy
+    publish_strategy,
 ):
     mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
     mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
     mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
 
     with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-        jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
-    mock_event_published_signal.assert_called_once()
+        jaiminho_django_project.send.notify(
+            {"action": "a", "type": "t", "c": "d"}, first_param="1", second_param="2"
+        )
+
+    orignal_func = jaiminho_django_project.send.notify.original_func
+    mock_event_published_signal.assert_called_once_with(
+        sender=orignal_func,
+        event_payload={"action": "a", "type": "t", "c": "d"},
+        first_param="1",
+        second_param="2",
+    )
     assert len(callbacks) == 1
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 @pytest.mark.parametrize(
     ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
 )
@@ -297,16 +289,24 @@ def test_send_trigger_event_failed_to_publish_signal(
     mocker,
     delete_after_send,
     persist_all_events,
-    publish_strategy
+    publish_strategy,
 ):
     mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
     mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
     mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
 
     with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-        jaiminho_django_project.send.notify({"action": "a", "type": "t", "c": "d"})
+        jaiminho_django_project.send.notify(
+            {"action": "a", "type": "t", "c": "d"}, first_param="1", second_param="2"
+        )
 
-    mock_event_failed_to_publish_signal.assert_called_once()
+    orignal_func = jaiminho_django_project.send.notify.original_func
+    mock_event_failed_to_publish_signal.assert_called_once_with(
+        sender=orignal_func,
+        event_payload={"action": "a", "type": "t", "c": "d"},
+        first_param="1",
+        second_param="2",
+    )
     assert len(callbacks) == 1
 
 
@@ -320,9 +320,7 @@ def encoder():
     return Encoder
 
 
-@pytest.mark.parametrize(
-    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
-)
+@pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
 @pytest.mark.parametrize(
     ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
 )
@@ -333,7 +331,7 @@ def test_send_fail_with_parameters(
     mocker,
     delete_after_send,
     persist_all_events,
-    publish_strategy
+    publish_strategy,
 ):
     mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
     mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
