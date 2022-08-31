@@ -25,6 +25,13 @@ class Command(BaseCommand):
             default=1,
             help="Define the sleep interval (in seconds) between each loop"
         )
+        parser.add_argument(
+            "stream",
+            nargs="?",
+            type=str,
+            default=None,
+            help="Define which stream events should be relayed. If not provided, all events will be relayed."
+        )
 
     def handle(self, *args, **options):
         publish_strategy = create_publish_strategy(settings.publish_strategy)
@@ -39,5 +46,5 @@ class Command(BaseCommand):
 
         else:
             log.info("EVENTS-RELAY-COMMAND: Started to relay events only once")
-            publish_strategy.relay()
+            publish_strategy.relay(stream=options["stream"])
             log.info("EVENTS-RELAY-COMMAND: Relay finished")

@@ -76,6 +76,7 @@ def test_send_success_should_persist_all_events(
         jaiminho_django_project.send.notify(payload)
 
     assert Event.objects.all().count() == 1
+    assert Event.objects.first().stream is None
     assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text
 
 
@@ -192,6 +193,7 @@ def test_send_success_when_should_not_delete_after_send(
 
     assert Event.objects.all().count() == 1
     event = Event.objects.first()
+    assert Event.objects.first().stream is None
     assert event.sent_at == datetime(2022, 1, 1, tzinfo=UTC)
     assert "JAIMINHO-ON-COMMIT-HOOK: Event marked as sent" in caplog.text
 
@@ -220,6 +222,7 @@ def test_send_fail(
     mock_internal_notify_fail.assert_called_once_with(payload)
     assert Event.objects.all().count() == 1
     assert Event.objects.first().sent_at is None
+    assert Event.objects.first().stream is None
     mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
     assert len(callbacks) == 1
     assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
@@ -349,3 +352,26 @@ def test_send_fail_with_parameters(
         dill.loads(event.function).__code__.co_code
         == jaiminho_django_project.send.notify.original_func.__code__.co_code
     )
+
+
+@pytest.mark.parametrize(
+    "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+)
+def test_send_to_stream_success_should_persist_all_events(
+    mock_internal_notify,
+    mock_log_metric,
+    mock_should_not_delete_after_send,
+    mock_should_persist_all_events,
+    publish_strategy,
+    caplog,
+    mocker,
+):
+    mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+    payload = {"action": "a", "type": "t", "c": "d"}
+    with TestCase.captureOnCommitCallbacks(execute=True):
+        jaiminho_django_project.send.notify_to_stream(payload)
+
+    assert Event.objects.all().count() == 1
+    assert Event.objects.get().stream == jaiminho_django_project.send.EXAMPLE_STREAM
+    assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text

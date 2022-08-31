@@ -16,3 +16,15 @@ def save_to_outbox(func):
 
     inner.original_func = func
     return inner
+
+
+def save_to_outbox_stream(stream):
+    def decorator(func):
+        @wraps(func)
+        def inner(payload, **kwargs):
+            publish_strategy = create_publish_strategy(settings.publish_strategy)
+            publish_strategy.publish(payload, kwargs, func, stream)
+
+        inner.original_func = func
+        return inner
+    return decorator

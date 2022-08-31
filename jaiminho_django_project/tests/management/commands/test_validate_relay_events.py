@@ -14,7 +14,7 @@ from jaiminho.models import Event
 from jaiminho.publish_strategies import BaseStrategy
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.management.commands import validate_events_relay
-from jaiminho_django_project.send import notify, notify_without_decorator
+from jaiminho_django_project.send import notify, notify_without_decorator, notify_to_stream
 
 pytestmark = pytest.mark.django_db
 
@@ -103,6 +103,82 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+    )
+    def test_relay_failed_event_from_any_stream(
+        self,
+        mock_log_metric,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        first_event = EventFactory(
+            function=dill.dumps(notify),
+        )
+        second_event = EventFactory(
+            function=dill.dumps(notify_to_stream),
+            stream="my-stream"
+        )
+        third_event = EventFactory(
+            function=dill.dumps(notify_to_stream),
+            stream="my-other-stream"
+        )
+        assert Event.objects.all().count() == 3
+
+        with freeze_time("2022-10-31"):
+            call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_has_calls(
+            [
+                call(dill.loads(first_event.message)),
+                call(dill.loads(second_event.message)),
+                call(dill.loads(third_event.message)),
+            ],
+            any_order=True
+        )
+
+        assert Event.objects.all().count() == 3
+        for event in Event.objects.all():
+            assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+    )
+    def test_relay_failed_event_from_specific_stream(
+        self,
+        mock_log_metric,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        first_event = EventFactory(
+            function=dill.dumps(notify),
+        )
+        second_event = EventFactory(
+            function=dill.dumps(notify_to_stream),
+            stream="my-stream"
+        )
+        third_event = EventFactory(
+            function=dill.dumps(notify_to_stream),
+            stream="my-other-stream"
+        )
+        assert Event.objects.all().count() == 3
+
+        with freeze_time("2022-10-31"):
+            call_command(validate_events_relay.Command(), run_in_loop=False, loop_interval=0.1, stream="my-stream")
+
+        mock_internal_notify.assert_called_once_with(dill.loads(second_event.message))
+
+        assert Event.objects.all().count() == 3
+        assert Event.objects.get(id=first_event.id).sent_at is None
+        assert Event.objects.get(id=second_event.id).sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+        assert Event.objects.get(id=third_event.id).sent_at is None
 
     def test_relay_must_loop_when_run_in_loop(
         self,

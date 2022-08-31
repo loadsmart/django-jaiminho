@@ -11,6 +11,7 @@ class Event(models.Model):
     kwargs = models.BinaryField(null=True, max_length=MAX_BYTES)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True)
+    stream = models.CharField(max_length=100, null=True)
 
     def mark_as_sent(self):
         self.sent_at = timezone.now()
