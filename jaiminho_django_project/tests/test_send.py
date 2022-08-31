@@ -268,9 +268,9 @@ def test_send_trigger_event_published_signal(
             {"action": "a", "type": "t", "c": "d"}, first_param="1", second_param="2"
         )
 
-    orignal_func = jaiminho_django_project.send.notify.original_func
+    original_func = jaiminho_django_project.send.notify.original_func
     mock_event_published_signal.assert_called_once_with(
-        sender=orignal_func,
+        sender=original_func,
         event_payload={"action": "a", "type": "t", "c": "d"},
         first_param="1",
         second_param="2",
@@ -300,9 +300,9 @@ def test_send_trigger_event_failed_to_publish_signal(
             {"action": "a", "type": "t", "c": "d"}, first_param="1", second_param="2"
         )
 
-    orignal_func = jaiminho_django_project.send.notify.original_func
+    original_func = jaiminho_django_project.send.notify.original_func
     mock_event_failed_to_publish_signal.assert_called_once_with(
-        sender=orignal_func,
+        sender=original_func,
         event_payload={"action": "a", "type": "t", "c": "d"},
         first_param="1",
         second_param="2",
