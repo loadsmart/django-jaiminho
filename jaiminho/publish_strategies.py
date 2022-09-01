@@ -14,30 +14,31 @@ from jaiminho import settings
 logger = logging.getLogger(__name__)
 
 
-def create_event_data(func_signature, kwargs, payload):
+def create_event_data(func_signature, kwargs, payload, stream=None):
     return {
         "message": dill.dumps(payload),
         "function": func_signature,
         "kwargs": dill.dumps(kwargs) if bool(kwargs) else None,
+        "stream": stream,
     }
 
 
 class BaseStrategy(ABC):
     @abstractmethod
-    def publish(self, payload, kwargs, func):
+    def publish(self, payload, kwargs, func, stream=None):
         raise NotImplementedError
 
     @abstractmethod
-    def relay(self):
+    def relay(self, stream=None):
         raise NotImplementedError
 
 
 class PublishOnCommitStrategy(BaseStrategy):
     event_relayer = EventRelayer(stuck_on_error=False)
 
-    def publish(self, payload, kwargs, func):
+    def publish(self, payload, kwargs, func, stream=None):
         func_signature = dill.dumps(func)
-        event_data = create_event_data(func_signature, kwargs, payload)
+        event_data = create_event_data(func_signature, kwargs, payload, stream=stream)
 
         event = None
         if settings.persist_all_events:
@@ -56,21 +57,21 @@ class PublishOnCommitStrategy(BaseStrategy):
             f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}"
         )
 
-    def relay(self):
-        self.event_relayer.relay()
+    def relay(self, stream=None):
+        self.event_relayer.relay(stream)
 
 
 class KeepOrderStrategy(BaseStrategy):
     event_relayer = EventRelayer(stuck_on_error=True)
 
-    def publish(self, payload, kwargs, func):
+    def publish(self, payload, kwargs, func, stream=None):
         func_signature = dill.dumps(func)
-        event_data = create_event_data(func_signature, kwargs, payload)
+        event_data = create_event_data(func_signature, kwargs, payload, stream=stream)
         event = Event.objects.create(**event_data)
         logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {payload}")
 
-    def relay(self):
-        self.event_relayer.relay()
+    def relay(self, stream=None):
+        self.event_relayer.relay(stream)
 
 
 def create_publish_strategy(strategy_type):
