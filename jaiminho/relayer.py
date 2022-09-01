@@ -25,16 +25,20 @@ class EventRelayer:
     def __init__(self, stuck_on_error):
         self.stuck_on_error = stuck_on_error
 
-    def relay(self):
-        events = Event.objects.filter(sent_at__isnull=True).order_by(
+    def relay(self, stream=None):
+        events_qs = Event.objects.filter(sent_at__isnull=True)
+        if stream:
+            events_qs = events_qs.filter(stream=stream)
+
+        events_qs = events_qs.order_by(
             "created_at"
         )
 
-        if not events:
+        if not events_qs:
             logger.info("No failed events found.")
             return
 
-        for event in events:
+        for event in events_qs:
             message = dill.loads(event.message)
             kwargs = dill.loads(event.kwargs) if event.kwargs else {}
             try:

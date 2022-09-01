@@ -1,4 +1,7 @@
-from jaiminho.send import save_to_outbox
+from jaiminho.send import save_to_outbox, save_to_outbox_stream
+
+
+EXAMPLE_STREAM = "my-stream"
 
 
 class InternalDecoder:
@@ -14,6 +17,11 @@ def internal_notify(payload, decoder=None, **kwargs):
 
 @save_to_outbox
 def notify(payload, **kwargs):
+    internal_notify(payload, **kwargs)
+
+
+@save_to_outbox_stream(EXAMPLE_STREAM)
+def notify_to_stream(payload, **kwargs):
     internal_notify(payload, **kwargs)
 
 
