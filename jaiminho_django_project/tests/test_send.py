@@ -649,6 +649,7 @@ class TestNotifyWithStream:
             == jaiminho_django_project.send.notify.original_func.__code__.co_code
         )
 
+
 class TestNofityWithStreamOverwritingStrategy:
     def test_send_to_stream_success_should_persist_all_events(
         self,
