@@ -107,7 +107,7 @@ class TestValidateEventsRelay:
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
     )
-    def test_relay_failed_event_from_any_stream(
+    def test_relay_failed_event_from_empty_stream(
         self,
         mock_log_metric,
         mock_internal_notify,
@@ -132,18 +132,12 @@ class TestValidateEventsRelay:
         with freeze_time("2022-10-31"):
             call_command(validate_events_relay.Command())
 
-        mock_internal_notify.assert_has_calls(
-            [
-                call(dill.loads(first_event.message)),
-                call(dill.loads(second_event.message)),
-                call(dill.loads(third_event.message)),
-            ],
-            any_order=True
-        )
+        mock_internal_notify.assert_called_once_with(dill.loads(first_event.message))
 
         assert Event.objects.all().count() == 3
-        for event in Event.objects.all():
-            assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+        assert Event.objects.get(id=first_event.id).sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+        assert Event.objects.get(id=second_event.id).sent_at is None
+        assert Event.objects.get(id=third_event.id).sent_at is None
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
