@@ -103,9 +103,9 @@ You can use Jaiminho's [EventCleanerCommand](https://github.com/loadsmart/jaimin
 
 The default time interval is `7 days`. You can use the `TIME_TO_DELETE` setting to change it. It should be added to `JAIMINHO_CONFIG` and must be a valid [timedelta](https://docs.python.org/3/library/datetime.html#timedelta-objects).
 
-### Relay per stream
+### Relay per stream and Overwrite publish strategy
 
-Different streams can have different requirements. You can save separate events per streams by using @save_to_outbox_stream decorator and run relay command with stream filter option, e.g
+Different streams can have different requirements. You can save separate events per streams by using @save_to_outbox_stream decorator:
 
 ````python
 @save_to_outbox_stream("my-stream")
@@ -114,6 +114,16 @@ def any_external_call(payload, **kwargs):
     pass
 ````
 
+you can also overwrite publish strategy configure on settings:
+
+````python
+@save_to_outbox_stream("my-stream", PublishStrategyType.KEEP_ORDER)
+def any_external_call(payload, **kwargs):
+    # do something
+    pass
+````
+
+And then, run relay command with stream filter option
 ````shell
 python manage.py relay_event True 0.1 my-stream
 ````

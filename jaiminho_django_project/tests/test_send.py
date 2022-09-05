@@ -10,6 +10,7 @@ from django.test import TestCase
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 import jaiminho_django_project.send
+from jaiminho.publish_strategies import KeepOrderStrategy
 
 pytestmark = pytest.mark.django_db
 
@@ -647,3 +648,27 @@ class TestNotifyWithStream:
             dill.loads(event.function).__code__.co_code
             == jaiminho_django_project.send.notify.original_func.__code__.co_code
         )
+
+
+class TestNofityWithStreamOverwritingStrategy:
+    def test_send_to_stream_success_should_persist_all_events(
+        self,
+        mock_internal_notify,
+        mock_log_metric,
+        mock_should_not_delete_after_send,
+        mock_should_persist_all_events,
+        caplog,
+        mocker,
+    ):
+        strategy = KeepOrderStrategy()
+        mocker.patch("jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT)
+        create_publish_strategy_mock = mocker.patch("jaiminho.send.create_publish_strategy", autospec=True, return_value=strategy)
+
+        payload = {"action": "a", "type": "t", "c": "d"}
+        with TestCase.captureOnCommitCallbacks(execute=True):
+            jaiminho_django_project.send.notify_to_stream_overwriting_strategy(payload)
+
+        create_publish_strategy_mock.assert_called_once_with(PublishStrategyType.KEEP_ORDER)
+        assert Event.objects.all().count() == 1
+        assert Event.objects.get().stream == jaiminho_django_project.send.EXAMPLE_STREAM
+        assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text
