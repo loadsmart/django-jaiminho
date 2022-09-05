@@ -40,7 +40,7 @@ class Command(BaseCommand):
             log.info("EVENTS-RELAY-COMMAND: Started to relay events in loop mode")
 
             while True:
-                publish_strategy.relay()
+                publish_strategy.relay(stream=options["stream"])
                 sleep(options["loop_interval"])
                 log.info("EVENTS-RELAY-COMMAND: Relay iteration finished")
 

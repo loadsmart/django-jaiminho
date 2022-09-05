@@ -27,8 +27,7 @@ class EventRelayer:
 
     def relay(self, stream=None):
         events_qs = Event.objects.filter(sent_at__isnull=True)
-        if stream:
-            events_qs = events_qs.filter(stream=stream)
+        events_qs = events_qs.filter(stream=stream)
 
         events_qs = events_qs.order_by(
             "created_at"

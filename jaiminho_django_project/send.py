@@ -1,3 +1,4 @@
+from jaiminho.constants import PublishStrategyType
 from jaiminho.send import save_to_outbox, save_to_outbox_stream
 
 
@@ -22,6 +23,11 @@ def notify(payload, **kwargs):
 
 @save_to_outbox_stream(EXAMPLE_STREAM)
 def notify_to_stream(payload, **kwargs):
+    internal_notify(payload, **kwargs)
+
+
+@save_to_outbox_stream(EXAMPLE_STREAM, PublishStrategyType.KEEP_ORDER)
+def notify_to_stream_overwriting_strategy(payload, **kwargs):
     internal_notify(payload, **kwargs)
 
 
