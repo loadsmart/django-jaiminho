@@ -10,5 +10,5 @@ metadata:
     - python
 spec:
   type: library
-  lifecycle: experimental
+  lifecycle: production
   owner: financial-operations
