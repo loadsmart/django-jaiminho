@@ -14,11 +14,12 @@ from jaiminho import settings
 logger = logging.getLogger(__name__)
 
 
-def create_event_data(func_signature, kwargs, payload, stream=None):
+def create_event_data(func_signature, kwargs, payload, strategy, stream=None):
     return {
         "message": dill.dumps(payload),
         "function": func_signature,
         "kwargs": dill.dumps(kwargs) if bool(kwargs) else None,
+        "strategy": strategy,
         "stream": stream,
     }
 
@@ -38,7 +39,13 @@ class PublishOnCommitStrategy(BaseStrategy):
 
     def publish(self, payload, kwargs, func, stream=None):
         func_signature = dill.dumps(func)
-        event_data = create_event_data(func_signature, kwargs, payload, stream=stream)
+        event_data = create_event_data(
+            func_signature,
+            kwargs,
+            payload,
+            PublishStrategyType.PUBLISH_ON_COMMIT,
+            stream=stream,
+        )
 
         event = None
         if settings.persist_all_events:
@@ -66,7 +73,13 @@ class KeepOrderStrategy(BaseStrategy):
 
     def publish(self, payload, kwargs, func, stream=None):
         func_signature = dill.dumps(func)
-        event_data = create_event_data(func_signature, kwargs, payload, stream=stream)
+        event_data = create_event_data(
+            func_signature,
+            kwargs,
+            payload,
+            PublishStrategyType.KEEP_ORDER,
+            stream=stream,
+        )
         event = Event.objects.create(**event_data)
         logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {payload}")
 
