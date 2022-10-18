@@ -1,6 +1,7 @@
 import logging
 import dill
 
+from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.signals import event_published_by_events_relay, event_failed_to_publish_by_events_relay
 from jaiminho import settings
@@ -22,9 +23,6 @@ def _extract_original_func(event):
 
 
 class EventRelayer:
-    def __init__(self, stuck_on_error):
-        self.stuck_on_error = stuck_on_error
-
     def relay(self, stream=None):
         events_qs = Event.objects.filter(sent_at__isnull=True)
         events_qs = events_qs.filter(stream=stream)
@@ -85,3 +83,10 @@ class EventRelayer:
                         f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
                     )
                     return
+
+    @property
+    def stuck_on_error(self):
+        stuck_on_error = False
+        if settings.publish_strategy == PublishStrategyType.KEEP_ORDER:
+            stuck_on_error = True
+        return stuck_on_error
