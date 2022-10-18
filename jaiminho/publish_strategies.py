@@ -29,14 +29,8 @@ class BaseStrategy(ABC):
     def publish(self, payload, kwargs, func, stream=None):
         raise NotImplementedError
 
-    @abstractmethod
-    def relay(self, stream=None):
-        raise NotImplementedError
-
 
 class PublishOnCommitStrategy(BaseStrategy):
-    event_relayer = EventRelayer(stuck_on_error=False)
-
     def publish(self, payload, kwargs, func, stream=None):
         func_signature = dill.dumps(func)
         event_data = create_event_data(
@@ -64,13 +58,8 @@ class PublishOnCommitStrategy(BaseStrategy):
             f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}"
         )
 
-    def relay(self, stream=None):
-        self.event_relayer.relay(stream)
-
 
 class KeepOrderStrategy(BaseStrategy):
-    event_relayer = EventRelayer(stuck_on_error=True)
-
     def publish(self, payload, kwargs, func, stream=None):
         func_signature = dill.dumps(func)
         event_data = create_event_data(
@@ -82,9 +71,6 @@ class KeepOrderStrategy(BaseStrategy):
         )
         event = Event.objects.create(**event_data)
         logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {payload}")
-
-    def relay(self, stream=None):
-        self.event_relayer.relay(stream)
 
 
 def create_publish_strategy(strategy_type):

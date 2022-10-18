@@ -2,14 +2,15 @@ import logging
 from time import sleep
 
 from django.core.management import BaseCommand
+from jaiminho.relayer import EventRelayer
 
-from jaiminho import settings
-from jaiminho.send import create_publish_strategy
 
 log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
+    event_relayer = EventRelayer()
+
     def add_arguments(self, parser):
         parser.add_argument(
             "run_in_loop",
@@ -34,17 +35,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        publish_strategy = create_publish_strategy(settings.publish_strategy)
-
         if options["run_in_loop"]:
             log.info("EVENTS-RELAY-COMMAND: Started to relay events in loop mode")
 
             while True:
-                publish_strategy.relay(stream=options["stream"])
+                self.event_relayer.relay(stream=options["stream"])
                 sleep(options["loop_interval"])
                 log.info("EVENTS-RELAY-COMMAND: Relay iteration finished")
 
         else:
             log.info("EVENTS-RELAY-COMMAND: Started to relay events only once")
-            publish_strategy.relay(stream=options["stream"])
+            self.event_relayer.relay(stream=options["stream"])
             log.info("EVENTS-RELAY-COMMAND: Relay finished")
