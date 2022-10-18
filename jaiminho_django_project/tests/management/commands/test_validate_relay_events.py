@@ -314,10 +314,41 @@ class TestValidateEventsRelay:
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+            strategy=publish_strategy,
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            strategy=publish_strategy,
+        )
+
+        call_command(validate_events_relay.Command())
+        mock_internal_notify_fail.assert_called_once_with(
+            dill.loads(event_2.message),
+            encoder=DjangoJSONEncoder,
+            a="1",
+        )
+        assert "Events relaying are stuck due to failing Event" in caplog.text
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
+    )
+    def test_relay_stuck_when_one_fail_and_specific_stream(
+        self,
+        mock_internal_notify_fail,
+        publish_strategy,
+        mocker,
+        caplog,
+    ):
+        event_1 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+            strategy=publish_strategy,
+        )
+        event_2 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            strategy=publish_strategy,
         )
 
         call_command(validate_events_relay.Command())
