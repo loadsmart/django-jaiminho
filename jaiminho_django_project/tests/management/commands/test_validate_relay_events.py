@@ -12,6 +12,7 @@ from freezegun import freeze_time
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.publish_strategies import BaseStrategy
+from jaiminho.relayer import EventRelayer
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.management.commands import validate_events_relay
 from jaiminho_django_project.send import notify, notify_without_decorator, notify_to_stream
@@ -179,14 +180,15 @@ class TestValidateEventsRelay:
         mock_log_metric,
         mocker,
     ):
-        publish_strategy_mock = mocker.MagicMock(spec=BaseStrategy)
-        publish_strategy_mock.relay.side_effect = [None, None, Exception()]
-        mocker.patch("jaiminho.management.commands.events_relay.create_publish_strategy", return_value=publish_strategy_mock)
+        event_relayer_mock = mocker.MagicMock(spec=EventRelayer)
+        event_relayer_mock.relay.side_effect = [None, None, Exception()]
 
         with pytest.raises(Exception):
-            call_command(validate_events_relay.Command(), run_in_loop=True, loop_interval=0.1)
+            command = validate_events_relay.Command()
+            command.event_relayer = event_relayer_mock
+            call_command(command, run_in_loop=True, loop_interval=0.1)
 
-        assert publish_strategy_mock.relay.call_count == 3
+        assert event_relayer_mock.relay.call_count == 3
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
