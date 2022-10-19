@@ -85,4 +85,6 @@ class EventRelayer:
                     return
 
     def __stuck_on_error(self, event):
+        if not event.strategy:
+            return settings.publish_strategy == PublishStrategyType.KEEP_ORDER
         return event.strategy == PublishStrategyType.KEEP_ORDER
