@@ -344,14 +344,21 @@ class TestValidateEventsRelay:
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
             strategy=publish_strategy,
+            stream="my-stream"
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
             strategy=publish_strategy,
+            stream="other-stream"
         )
 
-        call_command(validate_events_relay.Command())
+        call_command(
+            validate_events_relay.Command(),
+            run_in_loop=False,
+            loop_interval=0.1,
+            stream="my-stream"
+        )
         mock_internal_notify_fail.assert_called_once_with(
             dill.loads(event_2.message),
             encoder=DjangoJSONEncoder,
