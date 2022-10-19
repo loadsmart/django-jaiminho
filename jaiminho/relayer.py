@@ -63,7 +63,7 @@ class EventRelayer:
                     f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}")
                 _capture_exception(e)
 
-                if self.stuck_on_error(event):
+                if self.__stuck_on_error(event):
                     logger.warning(
                         f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
                     )
@@ -78,11 +78,11 @@ class EventRelayer:
                 )
                 _capture_exception(e)
 
-                if self.stuck_on_error(event):
+                if self.__stuck_on_error(event):
                     logger.warning(
                         f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
                     )
                     return
 
-    def stuck_on_error(self, event):
+    def __stuck_on_error(self, event):
         return event.strategy == PublishStrategyType.KEEP_ORDER
