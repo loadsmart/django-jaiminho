@@ -12,6 +12,7 @@ from freezegun import freeze_time
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.publish_strategies import BaseStrategy
+from jaiminho.relayer import EventRelayer
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.management.commands import validate_events_relay
 from jaiminho_django_project.send import notify, notify_without_decorator, notify_to_stream
@@ -179,14 +180,15 @@ class TestValidateEventsRelay:
         mock_log_metric,
         mocker,
     ):
-        publish_strategy_mock = mocker.MagicMock(spec=BaseStrategy)
-        publish_strategy_mock.relay.side_effect = [None, None, Exception()]
-        mocker.patch("jaiminho.management.commands.events_relay.create_publish_strategy", return_value=publish_strategy_mock)
+        event_relayer_mock = mocker.MagicMock(spec=EventRelayer)
+        event_relayer_mock.relay.side_effect = [None, None, Exception()]
 
         with pytest.raises(Exception):
-            call_command(validate_events_relay.Command(), run_in_loop=True, loop_interval=0.1)
+            command = validate_events_relay.Command()
+            command.event_relayer = event_relayer_mock
+            call_command(command, run_in_loop=True, loop_interval=0.1)
 
-        assert publish_strategy_mock.relay.call_count == 3
+        assert event_relayer_mock.relay.call_count == 3
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
@@ -312,6 +314,37 @@ class TestValidateEventsRelay:
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+            strategy=publish_strategy,
+        )
+        event_2 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            strategy=publish_strategy,
+        )
+
+        call_command(validate_events_relay.Command())
+        mock_internal_notify_fail.assert_called_once_with(
+            dill.loads(event_2.message),
+            encoder=DjangoJSONEncoder,
+            a="1",
+        )
+        assert "Events relaying are stuck due to failing Event" in caplog.text
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
+    )
+    def test_relay_stuck_when_one_fail_and_no_strategy_on_event(
+        self,
+        mock_internal_notify_fail,
+        publish_strategy,
+        mocker,
+        caplog,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        event_1 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
@@ -319,6 +352,69 @@ class TestValidateEventsRelay:
         )
 
         call_command(validate_events_relay.Command())
+        mock_internal_notify_fail.assert_called_once_with(
+            dill.loads(event_2.message),
+            encoder=DjangoJSONEncoder,
+            a="1",
+        )
+        assert "Events relaying are stuck due to failing Event" in caplog.text
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
+    def test_relay_not_stuck_when_one_fail_and_no_strategy_on_event(
+        self,
+        mock_internal_notify_fail,
+        publish_strategy,
+        mocker,
+        caplog,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        event_1 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+        )
+        event_2 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+        )
+
+        call_command(validate_events_relay.Command())
+        call_1 = call(dill.loads(event_1.message), encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(dill.loads(event_2.message), encoder=DjangoJSONEncoder, a="2")
+        mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
+        assert "Events relaying are stuck due to failing Event" not in caplog.text
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
+    )
+    def test_relay_stuck_when_one_fail_and_specific_stream(
+        self,
+        mock_internal_notify_fail,
+        publish_strategy,
+        mocker,
+        caplog,
+    ):
+        event_1 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+            strategy=publish_strategy,
+            stream="my-stream"
+        )
+        event_2 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            strategy=publish_strategy,
+            stream="my-stream"
+        )
+
+        call_command(
+            validate_events_relay.Command(),
+            run_in_loop=False,
+            loop_interval=0.1,
+            stream="my-stream"
+        )
         mock_internal_notify_fail.assert_called_once_with(
             dill.loads(event_2.message),
             encoder=DjangoJSONEncoder,
