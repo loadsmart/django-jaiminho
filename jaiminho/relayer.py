@@ -55,7 +55,7 @@ class EventRelayer:
                     )
 
                 event_published_by_events_relay.send(
-                    sender=original_fn, event_payload=message
+                    sender=original_fn, event_payload=message, **kwargs
                 )
 
             except (ModuleNotFoundError, AttributeError) as e:
@@ -74,7 +74,7 @@ class EventRelayer:
                     f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}")
                 original_fn = _extract_original_func(event)
                 event_failed_to_publish_by_events_relay.send(
-                    sender=original_fn, event_payload=message
+                    sender=original_fn, event_payload=message, **kwargs
                 )
                 _capture_exception(e)
 
