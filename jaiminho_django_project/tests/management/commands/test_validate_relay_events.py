@@ -11,11 +11,14 @@ from freezegun import freeze_time
 
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
-from jaiminho.publish_strategies import BaseStrategy
 from jaiminho.relayer import EventRelayer
 from jaiminho.tests.factories import EventFactory
 from jaiminho_django_project.management.commands import validate_events_relay
-from jaiminho_django_project.send import notify, notify_without_decorator, notify_to_stream
+from jaiminho_django_project.send import (
+    notify,
+    notify_without_decorator,
+    notify_to_stream,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -62,6 +65,12 @@ class TestValidateEventsRelay:
         )
 
     @pytest.fixture
+    def failed_event_with_kwargs(self):
+        return EventFactory(
+            function=dill.dumps(notify), kwargs=dill.dumps({"ab": 2, "ac": 3})
+        )
+
+    @pytest.fixture
     def successful_event(self):
         return EventFactory(
             function=dill.dumps(notify),
@@ -81,7 +90,8 @@ class TestValidateEventsRelay:
         return mocker.patch("jaiminho.send.settings.delete_after_send", False)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_relay_failed_event(
         self,
@@ -106,7 +116,8 @@ class TestValidateEventsRelay:
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_relay_failed_event_from_empty_stream(
         self,
@@ -121,12 +132,10 @@ class TestValidateEventsRelay:
             function=dill.dumps(notify),
         )
         second_event = EventFactory(
-            function=dill.dumps(notify_to_stream),
-            stream="my-stream"
+            function=dill.dumps(notify_to_stream), stream="my-stream"
         )
         third_event = EventFactory(
-            function=dill.dumps(notify_to_stream),
-            stream="my-other-stream"
+            function=dill.dumps(notify_to_stream), stream="my-other-stream"
         )
         assert Event.objects.all().count() == 3
 
@@ -136,12 +145,15 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_called_once_with(dill.loads(first_event.message))
 
         assert Event.objects.all().count() == 3
-        assert Event.objects.get(id=first_event.id).sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+        assert Event.objects.get(id=first_event.id).sent_at == datetime(
+            2022, 10, 31, tzinfo=UTC
+        )
         assert Event.objects.get(id=second_event.id).sent_at is None
         assert Event.objects.get(id=third_event.id).sent_at is None
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_relay_failed_event_from_specific_stream(
         self,
@@ -156,23 +168,28 @@ class TestValidateEventsRelay:
             function=dill.dumps(notify),
         )
         second_event = EventFactory(
-            function=dill.dumps(notify_to_stream),
-            stream="my-stream"
+            function=dill.dumps(notify_to_stream), stream="my-stream"
         )
         third_event = EventFactory(
-            function=dill.dumps(notify_to_stream),
-            stream="my-other-stream"
+            function=dill.dumps(notify_to_stream), stream="my-other-stream"
         )
         assert Event.objects.all().count() == 3
 
         with freeze_time("2022-10-31"):
-            call_command(validate_events_relay.Command(), run_in_loop=False, loop_interval=0.1, stream="my-stream")
+            call_command(
+                validate_events_relay.Command(),
+                run_in_loop=False,
+                loop_interval=0.1,
+                stream="my-stream",
+            )
 
         mock_internal_notify.assert_called_once_with(dill.loads(second_event.message))
 
         assert Event.objects.all().count() == 3
         assert Event.objects.get(id=first_event.id).sent_at is None
-        assert Event.objects.get(id=second_event.id).sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+        assert Event.objects.get(id=second_event.id).sent_at == datetime(
+            2022, 10, 31, tzinfo=UTC
+        )
         assert Event.objects.get(id=third_event.id).sent_at is None
 
     def test_relay_must_loop_when_run_in_loop(
@@ -191,7 +208,8 @@ class TestValidateEventsRelay:
         assert event_relayer_mock.relay.call_count == 3
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_relay_failed_event_should_delete_after_send(
         self,
@@ -215,7 +233,8 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 0
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_trigger_the_correct_signal_when_resent_successfully(
         self,
@@ -237,7 +256,33 @@ class TestValidateEventsRelay:
         )
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
+    )
+    def test_trigger_the_correct_signal_when_resent_successfully_with_kwargs(
+        self,
+        failed_event_with_kwargs,
+        mock_log_metric,
+        mock_internal_notify,
+        mock_event_published_signal,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_called_once()
+        mock_event_published_signal.assert_not_called()
+        mock_log_metric.assert_called_once_with(
+            "event-published-through-outbox",
+            dill.loads(failed_event_with_kwargs.message),
+            **dill.loads(failed_event_with_kwargs.kwargs)
+        )
+
+    @pytest.mark.parametrize(
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_trigger_the_correct_signal_when_resent_failed(
         self,
@@ -259,10 +304,40 @@ class TestValidateEventsRelay:
         )
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
+    )
+    def test_trigger_the_correct_signal_when_resent_failed_with_kwargs(
+        self,
+        failed_event_with_kwargs,
+        mock_log_metric,
+        mock_internal_notify_fail,
+        mock_event_failed_to_publish_signal,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        call_command(validate_events_relay.Command())
+
+        mock_internal_notify_fail.assert_called_once()
+        mock_event_failed_to_publish_signal.assert_not_called()
+        mock_log_metric.assert_called_once_with(
+            "event-failed-to-publish-through-outbox",
+            dill.loads(failed_event_with_kwargs.message),
+            **dill.loads(failed_event_with_kwargs.kwargs)
+        )
+
+    @pytest.mark.parametrize(
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_doest_not_relay_when_does_not_exist_failed_events(
-        self, successful_event, caplog, publish_strategy, mocker,
+        self,
+        successful_event,
+        caplog,
+        publish_strategy,
+        mocker,
     ):
         assert Event.objects.filter(sent_at__isnull=True).count() == 0
         assert Event.objects.filter(sent_at__isnull=False).count() == 1
@@ -299,9 +374,7 @@ class TestValidateEventsRelay:
         call_2 = call(dill.loads(event_2.message), encoder=DjangoJSONEncoder, a="2")
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
 
-    @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
-    )
+    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
     def test_relay_stuck_when_one_fail(
         self,
         mock_internal_notify_fail,
@@ -330,9 +403,7 @@ class TestValidateEventsRelay:
         )
         assert "Events relaying are stuck due to failing Event" in caplog.text
 
-    @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
-    )
+    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
     def test_relay_stuck_when_one_fail_and_no_strategy_on_event(
         self,
         mock_internal_notify_fail,
@@ -386,9 +457,7 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
         assert "Events relaying are stuck due to failing Event" not in caplog.text
 
-    @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
-    )
+    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
     def test_relay_stuck_when_one_fail_and_specific_stream(
         self,
         mock_internal_notify_fail,
@@ -400,20 +469,20 @@ class TestValidateEventsRelay:
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
             strategy=publish_strategy,
-            stream="my-stream"
+            stream="my-stream",
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
             strategy=publish_strategy,
-            stream="my-stream"
+            stream="my-stream",
         )
 
         call_command(
             validate_events_relay.Command(),
             run_in_loop=False,
             loop_interval=0.1,
-            stream="my-stream"
+            stream="my-stream",
         )
         mock_internal_notify_fail.assert_called_once_with(
             dill.loads(event_2.message),
@@ -423,9 +492,12 @@ class TestValidateEventsRelay:
         assert "Events relaying are stuck due to failing Event" in caplog.text
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
-    def test_events_ordered_by_created_by_relay(self, mock_internal_notify, publish_strategy, mocker):
+    def test_events_ordered_by_created_by_relay(
+        self, mock_internal_notify, publish_strategy, mocker
+    ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         with freeze_time("2022-01-03"):
@@ -452,10 +524,15 @@ class TestValidateEventsRelay:
         mock_internal_notify.assert_has_calls([call_2, call_3, call_1], any_order=False)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_relay_message_when_notify_function_is_not_decorated(
-        self, mock_internal_notify, mock_should_not_delete_after_send, publish_strategy, mocker
+        self,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        publish_strategy,
+        mocker,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
@@ -476,10 +553,16 @@ class TestValidateEventsRelay:
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_dont_create_another_event_when_relay_fails(
-        self, failed_event, mock_internal_notify_fail, mock_capture_exception_fn, publish_strategy, mocker
+        self,
+        failed_event,
+        mock_internal_notify_fail,
+        mock_capture_exception_fn,
+        publish_strategy,
+        mocker,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         mocker.patch(
@@ -494,7 +577,8 @@ class TestValidateEventsRelay:
         assert Event.objects.all().count() == 1
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_raise_exception_when_module_does_not_exist_anymore(
         self, mocker, caplog, mock_capture_exception_fn, publish_strategy
@@ -518,9 +602,12 @@ class TestValidateEventsRelay:
         )
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
-    def test_raise_exception_when_function_does_not_exist_anymore(self, caplog, publish_strategy, mocker):
+    def test_raise_exception_when_function_does_not_exist_anymore(
+        self, caplog, publish_strategy, mocker
+    ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         missing_function = b"\x80\x04\x955\x00\x00\x00\x00\x00\x00\x00\x8c\x1cjaiminho_django_project.send\x94\x8c\x10missing_function\x94\x93\x94."
@@ -534,7 +621,8 @@ class TestValidateEventsRelay:
         assert "Can't get attribute 'missing_function' on" in caplog.text
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_works_fine_without_capture_message_fn(
         self,
@@ -551,7 +639,8 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_called_once()
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_works_with_custom_capture_message_fn(
         self, mocker, failed_event, mock_internal_notify_fail, publish_strategy
@@ -561,7 +650,6 @@ class TestValidateEventsRelay:
             "jaiminho.send.settings.default_capture_exception", mock_custom_capture_fn
         )
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
-
 
         call_command(validate_events_relay.Command())
 
