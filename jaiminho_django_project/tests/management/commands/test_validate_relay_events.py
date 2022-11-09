@@ -178,8 +178,6 @@ class TestValidateEventsRelay:
         with freeze_time("2022-10-31"):
             call_command(
                 validate_events_relay.Command(),
-                run_in_loop=False,
-                loop_interval=0.1,
                 stream="my-stream",
             )
 
@@ -192,7 +190,7 @@ class TestValidateEventsRelay:
         )
         assert Event.objects.get(id=third_event.id).sent_at is None
 
-    def test_relay_must_loop_when_run_in_loop(
+    def test_relay_must_loop_when_run_in_loop_using_kwargs(
         self,
         mock_log_metric,
         mocker,
@@ -204,6 +202,21 @@ class TestValidateEventsRelay:
             command = validate_events_relay.Command()
             command.event_relayer = event_relayer_mock
             call_command(command, run_in_loop=True, loop_interval=0.1)
+
+        assert event_relayer_mock.relay.call_count == 3
+
+    def test_relay_must_loop_when_run_using_param(
+        self,
+        mock_log_metric,
+        mocker,
+    ):
+        event_relayer_mock = mocker.MagicMock(spec=EventRelayer)
+        event_relayer_mock.relay.side_effect = [None, None, Exception()]
+
+        with pytest.raises(Exception):
+            command = validate_events_relay.Command()
+            command.event_relayer = event_relayer_mock
+            call_command(command, "--run-in-loop")
 
         assert event_relayer_mock.relay.call_count == 3
 
@@ -480,8 +493,6 @@ class TestValidateEventsRelay:
 
         call_command(
             validate_events_relay.Command(),
-            run_in_loop=False,
-            loop_interval=0.1,
             stream="my-stream",
         )
         mock_internal_notify_fail.assert_called_once_with(
