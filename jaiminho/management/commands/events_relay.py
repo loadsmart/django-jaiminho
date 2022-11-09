@@ -36,6 +36,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        loop_interval = options["loop_interval"]
+        run_in_loop = options["run_in_loop"]
+        stream = options["stream"]
+
+        print(f"run_in_loop: {run_in_loop}")
+        print(f"loop_interval: {loop_interval}")
+        print(f"stream: {stream}")
+
         if options["run_in_loop"]:
             log.info("EVENTS-RELAY-COMMAND: Started to relay events in loop mode")
 
