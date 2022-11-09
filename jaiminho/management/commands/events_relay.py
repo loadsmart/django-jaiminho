@@ -15,11 +15,17 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--run-in-loop",
-            type=bool,
-            default=False,
-            action=argparse.BooleanOptionalAction,
+            action="store_true",
             help="Define if command should run in loop or just once",
         )
+        parser.add_argument(
+            "--no-run-in-loop",
+            dest="run_in_loop",
+            action="store_false",
+            help="Define if command should run in loop or just once",
+        )
+        parser.set_defaults(run_in_loop=False)
+
         parser.add_argument(
             "--loop-interval",
             nargs="?",
