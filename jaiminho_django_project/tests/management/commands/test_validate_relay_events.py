@@ -216,9 +216,30 @@ class TestValidateEventsRelay:
         with pytest.raises(Exception):
             command = validate_events_relay.Command()
             command.event_relayer = event_relayer_mock
-            call_command(command, "--run-in-loop")
+            call_command(command, "--no-run-in-loop")
 
         assert event_relayer_mock.relay.call_count == 3
+
+    def test_accept_no_run_in_loop_as_argument(
+        self,
+        mock_log_metric,
+        failed_event,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT)
+
+        assert Event.objects.all().count() == 1
+
+        with freeze_time("2022-10-31"):
+            call_command(validate_events_relay.Command(), "--no-run-in-loop")
+
+        mock_internal_notify.assert_called_once()
+        mock_internal_notify.assert_called_with(dill.loads(failed_event.message))
+        assert Event.objects.all().count() == 1
+        event = Event.objects.all()[0]
+        assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     @pytest.mark.parametrize(
         "publish_strategy",
