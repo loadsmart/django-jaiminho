@@ -1,3 +1,4 @@
+import argparse
 import logging
 from time import sleep
 
@@ -13,21 +14,21 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "run_in_loop",
-            nargs="?",
+            "--run-in-loop",
             type=bool,
             default=False,
-            help="Define if command should run in loop or just once"
+            action=argparse.BooleanOptionalAction,
+            help="Define if command should run in loop or just once",
         )
         parser.add_argument(
-            "loop_interval",
+            "--loop-interval",
             nargs="?",
             type=float,
             default=1,
             help="Define the sleep interval (in seconds) between each loop"
         )
         parser.add_argument(
-            "stream",
+            "--stream",
             nargs="?",
             type=str,
             default=None,
