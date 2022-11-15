@@ -234,6 +234,46 @@ class TestValidateEventsRelay:
 
         assert event_relayer_mock.relay.call_count == 1
 
+    def test_does_not_run_in_loop_when_receiving_false_as_kwargs(
+        self,
+        mock_log_metric,
+        mocker,
+    ):
+        event_relayer_mock = mocker.MagicMock(spec=EventRelayer)
+        event_relayer_mock.relay.side_effect = [None, None, Exception()]
+
+        command = validate_events_relay.Command()
+        command.event_relayer = event_relayer_mock
+        call_command(command, run_in_loop=False)
+
+        assert event_relayer_mock.relay.call_count == 1
+
+    def test_arguments_are_optionals_when_passing_the_stream_arg(
+        self,
+        mock_log_metric,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        mocker,
+    ):
+        mocker.patch(
+            "jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT
+        )
+        event = EventFactory(function=dill.dumps(notify_to_stream), stream="my-stream")
+
+        with freeze_time("2022-10-31"):
+            call_command(
+                validate_events_relay.Command(),
+                "--stream",
+                "my-stream",
+            )
+
+        mock_internal_notify.assert_called_once_with(dill.loads(event.message))
+
+        assert Event.objects.all().count() == 1
+        assert Event.objects.get(id=event.id).sent_at == datetime(
+            2022, 10, 31, tzinfo=UTC
+        )
+
     @pytest.mark.parametrize(
         "publish_strategy",
         (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
