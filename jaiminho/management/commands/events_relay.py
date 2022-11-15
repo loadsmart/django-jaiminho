@@ -16,14 +16,8 @@ class Command(BaseCommand):
             "--run-in-loop",
             action="store_true",
             help="Define if command should run in loop or just once",
+            default=False
         )
-        parser.add_argument(
-            "--no-run-in-loop",
-            dest="run_in_loop",
-            action="store_false",
-            help="Define if command should run in loop or just once",
-        )
-        parser.set_defaults(run_in_loop=False)
 
         parser.add_argument(
             "--loop-interval",

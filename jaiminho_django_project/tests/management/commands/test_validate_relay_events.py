@@ -220,7 +220,7 @@ class TestValidateEventsRelay:
 
         assert event_relayer_mock.relay.call_count == 3
 
-    def test_accept_no_run_in_loop_as_argument(
+    def test_does_not_run_in_loop_by_default(
         self,
         mock_log_metric,
         mocker,
@@ -230,7 +230,7 @@ class TestValidateEventsRelay:
 
         command = validate_events_relay.Command()
         command.event_relayer = event_relayer_mock
-        call_command(command, "--no-run-in-loop")
+        call_command(command)
 
         assert event_relayer_mock.relay.call_count == 1
 
