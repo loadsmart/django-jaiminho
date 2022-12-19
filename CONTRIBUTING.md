@@ -1,4 +1,6 @@
-Welcome contributors to the project: Admit that you are eager for contributions and so happy they found themselves here.
+Jaiminho solved an internal problem we had and we hope it will improve life quality for other people as well. 
+Improvements and new use cases are most welcome!
+To get a change accepted quickly, please check the items below.
 
 **Short Links to Important Resources**:
    bugs: Please open issues in our Github project
