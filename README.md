@@ -142,8 +142,11 @@ virtualenv venv
 pip install -r requirements-dev.txt
 tox -e py39
 ```
+## Collaboration
+
+If you want to improve or suggest improvements, check our CONTRIBUTE.md file.
 
 
 ## License
 
-This project is licensed under Private.
+This project is licensed under MIT License.
