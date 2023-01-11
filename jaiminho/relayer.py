@@ -36,26 +36,26 @@ class EventRelayer:
             return
 
         for event in events_qs:
-            message = dill.loads(event.message)
+            args = dill.loads(event.message)
             kwargs = dill.loads(event.kwargs) if event.kwargs else {}
             try:
                 original_fn = _extract_original_func(event)
-                original_fn(message, **kwargs)
+                original_fn(*args, **kwargs)
                 logger.info(f"JAIMINHO-EVENTS-RELAY: Event sent. Event {event}")
 
                 if settings.delete_after_send:
                     event.delete()
                     logger.info(
-                        f"JAIMINHO-EVENTS-RELAY: Event deleted after success send. Event: {event}, Payload: {message}"
+                        f"JAIMINHO-EVENTS-RELAY: Event deleted after success send. Event: {event}, Payload: {args}"
                     )
                 else:
                     event.mark_as_sent()
                     logger.info(
-                        f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {message}"
+                        f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {args}"
                     )
 
                 event_published_by_events_relay.send(
-                    sender=original_fn, event_payload=message, **kwargs
+                    sender=original_fn, event_payload=args, **kwargs
                 )
 
             except (ModuleNotFoundError, AttributeError) as e:
@@ -74,7 +74,7 @@ class EventRelayer:
                     f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}")
                 original_fn = _extract_original_func(event)
                 event_failed_to_publish_by_events_relay.send(
-                    sender=original_fn, event_payload=message, **kwargs
+                    sender=original_fn, event_payload=args, **kwargs
                 )
                 _capture_exception(e)
 

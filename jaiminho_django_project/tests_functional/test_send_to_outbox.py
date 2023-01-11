@@ -41,6 +41,7 @@ class TestSendToOutbox:
 
         assert Event.objects.count() == 2
         outbox_events = Event.objects.all()
+
         self.assertEvent(outbox_events[0])
         self.assertEvent(outbox_events[1])
 
@@ -61,8 +62,8 @@ class TestSendToOutbox:
 
         first_file = open(first_file_path)
         second_file = open(second_file_path)
-        assert json.load(first_file) == first_payload
-        assert json.load(second_file) == second_payload
+        assert json.load(first_file) == [first_payload]
+        assert json.load(second_file) == [second_payload]
 
     def assertEvent(self, event):
         assert event.strategy == PublishStrategyType.KEEP_ORDER
