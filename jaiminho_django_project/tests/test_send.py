@@ -154,14 +154,14 @@ class TestNotify:
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"}, )
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify(payload)
+            jaiminho_django_project.send.notify(*args)
 
         assert len(callbacks) == 1
-        mock_internal_notify.assert_called_once_with(payload)
+        mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 1
-        mock_log_metric.assert_called_once_with("event-published", payload)
+        mock_log_metric.assert_called_once_with("event-published", args)
 
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
     def test_send_success_should_not_persist_all_events(
@@ -173,12 +173,12 @@ class TestNotify:
         mocker,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify(payload)
-        mock_internal_notify.assert_called_once_with(payload)
+            jaiminho_django_project.send.notify(*args)
+        mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", payload)
+        mock_log_metric.assert_called_once_with("event-published", args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
@@ -194,16 +194,16 @@ class TestNotify:
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify(payload)
+            jaiminho_django_project.send.notify(*args)
             assert Event.objects.all().count() == 1
             event = Event.objects.get()
             assert event.sent_at is None
 
-        mock_internal_notify.assert_called_once_with(payload)
+        mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", payload)
+        mock_log_metric.assert_called_once_with("event-published", args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
 
@@ -251,15 +251,15 @@ class TestNotify:
         mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify(payload)
+            jaiminho_django_project.send.notify(*args)
 
-        mock_internal_notify_fail.assert_called_once_with(payload)
+        mock_internal_notify_fail.assert_called_once_with(*args)
         assert Event.objects.all().count() == 1
         assert Event.objects.first().sent_at is None
         assert Event.objects.first().stream is None
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
 
@@ -274,13 +274,13 @@ class TestNotify:
 
         mock_internal_notify_fail.side_effect = exception
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify(payload)
+            jaiminho_django_project.send.notify(*args)
 
-        mock_internal_notify_fail.assert_called_once_with(payload)
+        mock_internal_notify_fail.assert_called_once_with(*args)
 
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
@@ -301,15 +301,17 @@ class TestNotify:
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
 
+        args = ({"action": "a", "type": "t", "c": "d"}, )
+
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_project.send.notify(
-                {"action": "a", "type": "t", "c": "d"}, first_param="1", second_param="2"
+                *args, first_param="1", second_param="2"
             )
 
         original_func = jaiminho_django_project.send.notify.original_func
         mock_event_published_signal.assert_called_once_with(
             sender=original_func,
-            event_payload={"action": "a", "type": "t", "c": "d"},
+            event_payload=args,
             first_param="1",
             second_param="2",
         )
@@ -333,15 +335,16 @@ class TestNotify:
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
 
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_project.send.notify(
-                {"action": "a", "type": "t", "c": "d"}, first_param="1", second_param="2"
+                *args, first_param="1", second_param="2"
             )
 
         original_func = jaiminho_django_project.send.notify.original_func
         mock_event_failed_to_publish_signal.assert_called_once_with(
             sender=original_func,
-            event_payload={"action": "a", "type": "t", "c": "d"},
+            event_payload=args,
             first_param="1",
             second_param="2",
         )
@@ -364,16 +367,16 @@ class TestNotify:
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.delete_after_send", persist_all_events)
-        message = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         param = {"param": 1}
-        jaiminho_django_project.send.notify(message, encoder=encoder, param=param)
+        jaiminho_django_project.send.notify(*args, encoder=encoder, param=param)
         assert Event.objects.all().count() == 1
         event = Event.objects.first()
         assert event.sent_at is None
         assert event.stream is None
         assert dill.loads(event.kwargs)["encoder"] == Encoder
         assert dill.loads(event.kwargs)["param"] == param
-        assert dill.loads(event.message) == message
+        assert dill.loads(event.message) == args
         assert (
             dill.loads(event.function).__code__.co_code
             == jaiminho_django_project.send.notify.original_func.__code__.co_code
@@ -469,14 +472,14 @@ class TestNotifyWithStream:
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify_to_stream(payload)
+            jaiminho_django_project.send.notify_to_stream(*args)
 
         assert len(callbacks) == 1
-        mock_internal_notify.assert_called_once_with(payload)
+        mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 1
-        mock_log_metric.assert_called_once_with("event-published", payload)
+        mock_log_metric.assert_called_once_with("event-published", args)
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
@@ -490,12 +493,12 @@ class TestNotifyWithStream:
         mocker
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"}, )
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify_to_stream(payload)
-        mock_internal_notify.assert_called_once_with(payload)
+            jaiminho_django_project.send.notify_to_stream(*args)
+        mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", payload)
+        mock_log_metric.assert_called_once_with("event-published", args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize(
@@ -513,16 +516,16 @@ class TestNotifyWithStream:
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify_to_stream(payload)
+            jaiminho_django_project.send.notify_to_stream(*args)
             assert Event.objects.all().count() == 1
             event = Event.objects.get()
             assert event.sent_at is None
 
-        mock_internal_notify.assert_called_once_with(payload)
+        mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", payload)
+        mock_log_metric.assert_called_once_with("event-published", args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
 
@@ -574,15 +577,15 @@ class TestNotifyWithStream:
         mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify_to_stream(payload)
+            jaiminho_django_project.send.notify_to_stream(*args)
 
-        mock_internal_notify_fail.assert_called_once_with(payload)
+        mock_internal_notify_fail.assert_called_once_with(*args)
         assert Event.objects.all().count() == 1
         assert Event.objects.first().sent_at is None
         assert Event.objects.first().stream == jaiminho_django_project.send.EXAMPLE_STREAM
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
 
@@ -600,13 +603,13 @@ class TestNotifyWithStream:
 
         mock_internal_notify_fail.side_effect = exception
 
-        payload = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"}, )
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_project.send.notify_to_stream(payload)
+            jaiminho_django_project.send.notify_to_stream(*args)
 
-        mock_internal_notify_fail.assert_called_once_with(payload)
+        mock_internal_notify_fail.assert_called_once_with(*args)
 
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", payload)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize(
@@ -679,16 +682,16 @@ class TestNotifyWithStream:
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.delete_after_send", persist_all_events)
-        message = {"action": "a", "type": "t", "c": "d"}
+        args = ({"action": "a", "type": "t", "c": "d"}, )
         param = {"param": 1}
-        jaiminho_django_project.send.notify_to_stream(message, encoder=encoder, param=param)
+        jaiminho_django_project.send.notify_to_stream(*args, encoder=encoder, param=param)
         assert Event.objects.all().count() == 1
         event = Event.objects.first()
         assert event.stream == jaiminho_django_project.send.EXAMPLE_STREAM
         assert event.sent_at is None
         assert dill.loads(event.kwargs)["encoder"] == Encoder
         assert dill.loads(event.kwargs)["param"] == param
-        assert dill.loads(event.message) == message
+        assert dill.loads(event.message) == args
         assert (
             dill.loads(event.function).__code__.co_code
             == jaiminho_django_project.send.notify.original_func.__code__.co_code
