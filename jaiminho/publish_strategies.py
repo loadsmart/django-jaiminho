@@ -26,7 +26,7 @@ def create_event_data(func_signature, args, kwargs, strategy, stream=None):
 
 class BaseStrategy(ABC):
     @abstractmethod
-    def publish(self, payload, kwargs, func, stream=None):
+    def publish(self, args, kwargs, func, stream=None):
         raise NotImplementedError
 
 
