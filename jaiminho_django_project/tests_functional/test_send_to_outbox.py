@@ -30,17 +30,18 @@ class TestSendToOutbox:
         mocker.patch("jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT)
         assert Event.objects.count() == 0
 
-        first_payload = {"some": "data"}
-        second_payload = {"other": "data"}
+        first_args = [{"some": "data"}]
+        second_args = [{"other": "data"}]
         first_file_path = f"{EVENTS_FOLDER_PATH}/event_1.json"
         second_file_path = f"{EVENTS_FOLDER_PATH}/event_2.json"
 
         with TestCase.captureOnCommitCallbacks(execute=True):
-            jaiminho_django_project.send.notify_functional_to_stream_overwriting_strategy(first_payload, filepath=first_file_path)
-            jaiminho_django_project.send.notify_functional_to_stream_overwriting_strategy(second_payload, filepath=second_file_path)
+            jaiminho_django_project.send.notify_functional_to_stream_overwriting_strategy(*first_args, filepath=first_file_path)
+            jaiminho_django_project.send.notify_functional_to_stream_overwriting_strategy(*second_args, filepath=second_file_path)
 
         assert Event.objects.count() == 2
         outbox_events = Event.objects.all()
+
         self.assertEvent(outbox_events[0])
         self.assertEvent(outbox_events[1])
 
@@ -61,8 +62,8 @@ class TestSendToOutbox:
 
         first_file = open(first_file_path)
         second_file = open(second_file_path)
-        assert json.load(first_file) == first_payload
-        assert json.load(second_file) == second_payload
+        assert json.load(first_file) == first_args
+        assert json.load(second_file) == second_args
 
     def assertEvent(self, event):
         assert event.strategy == PublishStrategyType.KEEP_ORDER

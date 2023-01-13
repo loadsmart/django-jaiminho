@@ -12,35 +12,35 @@ class InternalDecoder:
         print("Hello Internal", args, kwargs)
 
 
-def internal_notify(payload, decoder=None, **kwargs):
+def internal_notify(*args, decoder=None, **kwargs):
     if decoder:
-        decoder(payload)
-    print(payload, kwargs)
+        decoder(args)
+    print(args, kwargs)
 
 
 @save_to_outbox
-def notify(payload, **kwargs):
-    internal_notify(payload, **kwargs)
+def notify(*args, **kwargs):
+    internal_notify(*args, **kwargs)
 
 
 @save_to_outbox_stream(EXAMPLE_STREAM)
-def notify_to_stream(payload, **kwargs):
-    internal_notify(payload, **kwargs)
+def notify_to_stream(*args, **kwargs):
+    internal_notify(*args, **kwargs)
 
 
 @save_to_outbox_stream(EXAMPLE_STREAM, PublishStrategyType.KEEP_ORDER)
-def notify_to_stream_overwriting_strategy(payload, **kwargs):
-    internal_notify(payload, **kwargs)
+def notify_to_stream_overwriting_strategy(*args, **kwargs):
+    internal_notify(*args, **kwargs)
 
 
 @save_to_outbox_stream(EXAMPLE_STREAM, PublishStrategyType.KEEP_ORDER)
-def notify_functional_to_stream_overwriting_strategy(payload, **kwargs):
+def notify_functional_to_stream_overwriting_strategy(*args, **kwargs):
     with open(kwargs["filepath"], "w") as write_file:
-        json.dump(payload, write_file, indent=4)
+        json.dump(args, write_file, indent=4)
 
 
-def notify_without_decorator(payload, **kwargs):
-    internal_notify(payload, **kwargs)
+def notify_without_decorator(*args, **kwargs):
+    internal_notify(*args, **kwargs)
 
 
 __all__ = ("notify", "notify_without_decorator")

@@ -62,6 +62,7 @@ class TestValidateEventsRelay:
     def failed_event(self):
         return EventFactory(
             function=dill.dumps(notify),
+            message=dill.dumps(({"b": 1},))
         )
 
     @pytest.fixture
@@ -110,7 +111,7 @@ class TestValidateEventsRelay:
             call_command(validate_events_relay.Command())
 
         mock_internal_notify.assert_called_once()
-        mock_internal_notify.assert_called_with(dill.loads(failed_event.message))
+        mock_internal_notify.assert_called_with(*dill.loads(failed_event.message))
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
@@ -130,19 +131,22 @@ class TestValidateEventsRelay:
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         first_event = EventFactory(
             function=dill.dumps(notify),
+            message=dill.dumps(({"b": 1},)),
         )
         second_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-stream"
+            function=dill.dumps(notify_to_stream), stream="my-stream",
+            message = dill.dumps(({"b": 2},)),
         )
         third_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-other-stream"
+            function=dill.dumps(notify_to_stream), stream="my-other-stream",
+            message = dill.dumps(({"b": 3},)),
         )
         assert Event.objects.all().count() == 3
 
         with freeze_time("2022-10-31"):
             call_command(validate_events_relay.Command())
 
-        mock_internal_notify.assert_called_once_with(dill.loads(first_event.message))
+        mock_internal_notify.assert_called_once_with(*dill.loads(first_event.message))
 
         assert Event.objects.all().count() == 3
         assert Event.objects.get(id=first_event.id).sent_at == datetime(
@@ -166,12 +170,15 @@ class TestValidateEventsRelay:
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         first_event = EventFactory(
             function=dill.dumps(notify),
+            message=dill.dumps(({"b": 1},)),
         )
         second_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-stream"
+            function=dill.dumps(notify_to_stream), stream="my-stream",
+            message=dill.dumps(({"b": 2},)),
         )
         third_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-other-stream"
+            function=dill.dumps(notify_to_stream), stream="my-other-stream",
+            message=dill.dumps(({"b": 3},)),
         )
         assert Event.objects.all().count() == 3
 
@@ -181,7 +188,7 @@ class TestValidateEventsRelay:
                 stream="my-stream",
             )
 
-        mock_internal_notify.assert_called_once_with(dill.loads(second_event.message))
+        mock_internal_notify.assert_called_once_with(*dill.loads(second_event.message))
 
         assert Event.objects.all().count() == 3
         assert Event.objects.get(id=first_event.id).sent_at is None
@@ -258,7 +265,12 @@ class TestValidateEventsRelay:
         mocker.patch(
             "jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT
         )
-        event = EventFactory(function=dill.dumps(notify_to_stream), stream="my-stream")
+        args = ({"b": 1},)
+        event = EventFactory(
+            function=dill.dumps(notify_to_stream),
+            stream="my-stream",
+            message=dill.dumps(args)
+        )
 
         with freeze_time("2022-10-31"):
             call_command(
@@ -267,7 +279,7 @@ class TestValidateEventsRelay:
                 "my-stream",
             )
 
-        mock_internal_notify.assert_called_once_with(dill.loads(event.message))
+        mock_internal_notify.assert_called_once_with(*dill.loads(event.message))
 
         assert Event.objects.all().count() == 1
         assert Event.objects.get(id=event.id).sent_at == datetime(
@@ -295,7 +307,7 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
-            dill.loads(failed_event.message),
+            *dill.loads(failed_event.message),
         )
         assert Event.objects.all().count() == 0
 
@@ -425,20 +437,23 @@ class TestValidateEventsRelay:
         mocker,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
-
+        args1 = ({"b": 1},)
+        args2 = ({"b": 2},)
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+            message=dill.dumps(args1),
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            message=dill.dumps(args2),
         )
 
         call_command(validate_events_relay.Command())
 
-        call_1 = call(dill.loads(event_1.message), encoder=DjangoJSONEncoder, a="1")
-        call_2 = call(dill.loads(event_2.message), encoder=DjangoJSONEncoder, a="2")
+        call_1 = call(args1[0], encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(args2[0], encoder=DjangoJSONEncoder, a="2")
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
 
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
@@ -451,20 +466,24 @@ class TestValidateEventsRelay:
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
+        args1 = ({"b": 1}, )
+        args2 = ({"b": 2}, )
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
             strategy=publish_strategy,
+            message=dill.dumps(args1),
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
             strategy=publish_strategy,
+            message=dill.dumps(args2),
         )
 
         call_command(validate_events_relay.Command())
         mock_internal_notify_fail.assert_called_once_with(
-            dill.loads(event_2.message),
+            args1[0],
             encoder=DjangoJSONEncoder,
             a="1",
         )
@@ -479,19 +498,22 @@ class TestValidateEventsRelay:
         caplog,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
-
+        args1 = ({"b": 1},)
+        args2 = ({"b": 2},)
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+            message=dill.dumps(args1),
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            message=dill.dumps(args2),
         )
 
         call_command(validate_events_relay.Command())
         mock_internal_notify_fail.assert_called_once_with(
-            dill.loads(event_2.message),
+            args1[0],
             encoder=DjangoJSONEncoder,
             a="1",
         )
@@ -509,18 +531,22 @@ class TestValidateEventsRelay:
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
+        args1 = ({"b": 1},)
+        args2 = ({"b": 2},)
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+            message=dill.dumps(args1),
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            message=dill.dumps(args2),
         )
 
         call_command(validate_events_relay.Command())
-        call_1 = call(dill.loads(event_1.message), encoder=DjangoJSONEncoder, a="1")
-        call_2 = call(dill.loads(event_2.message), encoder=DjangoJSONEncoder, a="2")
+        call_1 = call(args1[0], encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(args2[0], encoder=DjangoJSONEncoder, a="2")
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
         assert "Events relaying are stuck due to failing Event" not in caplog.text
 
@@ -532,17 +558,21 @@ class TestValidateEventsRelay:
         mocker,
         caplog,
     ):
+        args1 = ({"b": 1},)
+        args2 = ({"b": 2},)
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
             strategy=publish_strategy,
             stream="my-stream",
+            message=dill.dumps(args1),
         )
         event_2 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
             strategy=publish_strategy,
             stream="my-stream",
+            message=dill.dumps(args2),
         )
 
         call_command(
@@ -550,7 +580,7 @@ class TestValidateEventsRelay:
             stream="my-stream",
         )
         mock_internal_notify_fail.assert_called_once_with(
-            dill.loads(event_2.message),
+            args1[0],
             encoder=DjangoJSONEncoder,
             a="1",
         )
@@ -565,27 +595,34 @@ class TestValidateEventsRelay:
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
+        message1 = ({"b": 1},)
+        message2 = ({"b": 2},)
+        message3 = ({"b": 3},)
+
         with freeze_time("2022-01-03"):
             event_1 = EventFactory(
                 function=dill.dumps(notify),
                 kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
+                message=dill.dumps(message1),
             )
         with freeze_time("2022-01-01"):
             event_2 = EventFactory(
                 function=dill.dumps(notify),
                 kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+                message=dill.dumps(message2),
             )
         with freeze_time("2022-01-02"):
             event_3 = EventFactory(
                 function=dill.dumps(notify),
                 kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "3"}),
+                message=dill.dumps(message3),
             )
 
         call_command(validate_events_relay.Command())
 
-        call_1 = call(dill.loads(event_1.message), encoder=DjangoJSONEncoder, a="1")
-        call_2 = call(dill.loads(event_2.message), encoder=DjangoJSONEncoder, a="2")
-        call_3 = call(dill.loads(event_3.message), encoder=DjangoJSONEncoder, a="3")
+        call_1 = call(message1[0], encoder=DjangoJSONEncoder, a="1")
+        call_2 = call(message2[0], encoder=DjangoJSONEncoder, a="2")
+        call_3 = call(message3[0], encoder=DjangoJSONEncoder, a="3")
         mock_internal_notify.assert_has_calls([call_2, call_3, call_1], any_order=False)
 
     @pytest.mark.parametrize(
@@ -600,9 +637,10 @@ class TestValidateEventsRelay:
         mocker,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
-
+        args = ({"a": 1},)
         event = EventFactory(
             function=dill.dumps(notify_without_decorator),
+            message=dill.dumps(args),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder}),
         )
 
@@ -611,7 +649,7 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(
-            dill.loads(event.message), encoder=DjangoJSONEncoder
+            args[0], encoder=DjangoJSONEncoder
         )
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
