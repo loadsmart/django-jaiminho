@@ -8,7 +8,8 @@ event_failed_to_publish_by_events_relay = dispatch.Signal()
 
 def get_event_payload(args):
     try:
-        iter(args)
-        return args[0]
-    except (IndexError, TypeError):
+        if isinstance(args, tuple):
+            return args[0]
+        return {}
+    except IndexError:
         return {}
