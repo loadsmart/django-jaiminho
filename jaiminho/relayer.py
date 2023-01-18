@@ -3,7 +3,7 @@ import dill
 
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
-from jaiminho.signals import event_published_by_events_relay, event_failed_to_publish_by_events_relay
+from jaiminho.signals import event_published_by_events_relay, event_failed_to_publish_by_events_relay, get_event_payload
 from jaiminho import settings
 
 
@@ -38,6 +38,8 @@ class EventRelayer:
         for event in events_qs:
             args = dill.loads(event.message)
             kwargs = dill.loads(event.kwargs) if event.kwargs else {}
+            event_payload = get_event_payload(args)
+
             try:
                 original_fn = _extract_original_func(event)
                 original_fn(*args, **kwargs)
@@ -55,7 +57,7 @@ class EventRelayer:
                     )
 
                 event_published_by_events_relay.send(
-                    sender=original_fn, event_payload=args, **kwargs
+                    sender=original_fn, event_payload=event_payload, args=args, **kwargs
                 )
 
             except (ModuleNotFoundError, AttributeError) as e:
@@ -74,7 +76,7 @@ class EventRelayer:
                     f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}")
                 original_fn = _extract_original_func(event)
                 event_failed_to_publish_by_events_relay.send(
-                    sender=original_fn, event_payload=args, **kwargs
+                    sender=original_fn, event_payload=event_payload, args=args, **kwargs
                 )
                 _capture_exception(e)
 

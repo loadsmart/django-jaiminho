@@ -7,7 +7,7 @@ from django.db import transaction
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.relayer import EventRelayer
-from jaiminho.signals import event_published, event_failed_to_publish
+from jaiminho.signals import event_published, event_failed_to_publish, get_event_payload
 from jaiminho import settings
 
 
@@ -86,10 +86,18 @@ def create_publish_strategy(strategy_type):
 
 
 def on_commit_hook(func, event, event_data, args, kwargs):
+    event_payload = get_event_payload(args)
+
     try:
         func(*args, **kwargs)
         logger.info(f"JAIMINHO-ON-COMMIT-HOOK: Event sent successfully. Payload: {args}")
-        event_published.send(sender=func, event_payload=args, **kwargs)
+
+        event_published.send(
+            sender=func,
+            event_payload=event_payload,
+            args=args,
+            **kwargs
+        )
     except BaseException as exc:
         if not event:
             event = Event.objects.create(**event_data)
@@ -98,7 +106,7 @@ def on_commit_hook(func, event, event_data, args, kwargs):
             f"JAIMINHO-ON-COMMIT-HOOK: Event failed to be published. Event: {event}, Payload: {args}, "
             f"Exception: {exc}"
         )
-        event_failed_to_publish.send(sender=func, event_payload=args, **kwargs)
+        event_failed_to_publish.send(sender=func, event_payload=event_payload, args=args, **kwargs)
         return
 
     if event:
