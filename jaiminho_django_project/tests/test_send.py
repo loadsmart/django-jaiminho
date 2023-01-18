@@ -161,7 +161,7 @@ class TestNotify:
         assert len(callbacks) == 1
         mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 1
-        mock_log_metric.assert_called_once_with("event-published", args)
+        mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
 
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
     def test_send_success_should_not_persist_all_events(
@@ -178,7 +178,7 @@ class TestNotify:
             jaiminho_django_project.send.notify(*args)
         mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", args)
+        mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
@@ -203,7 +203,7 @@ class TestNotify:
 
         mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", args)
+        mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
 
@@ -259,7 +259,7 @@ class TestNotify:
         assert Event.objects.all().count() == 1
         assert Event.objects.first().sent_at is None
         assert Event.objects.first().stream is None
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
 
@@ -280,7 +280,7 @@ class TestNotify:
 
         mock_internal_notify_fail.assert_called_once_with(*args)
 
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
@@ -311,7 +311,8 @@ class TestNotify:
         original_func = jaiminho_django_project.send.notify.original_func
         mock_event_published_signal.assert_called_once_with(
             sender=original_func,
-            event_payload=args,
+            event_payload=args[0],
+            args=args,
             first_param="1",
             second_param="2",
         )
@@ -344,7 +345,8 @@ class TestNotify:
         original_func = jaiminho_django_project.send.notify.original_func
         mock_event_failed_to_publish_signal.assert_called_once_with(
             sender=original_func,
-            event_payload=args,
+            event_payload=args[0],
+            args=args,
             first_param="1",
             second_param="2",
         )
@@ -479,7 +481,7 @@ class TestNotifyWithStream:
         assert len(callbacks) == 1
         mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 1
-        mock_log_metric.assert_called_once_with("event-published", args)
+        mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
@@ -498,7 +500,7 @@ class TestNotifyWithStream:
             jaiminho_django_project.send.notify_to_stream(*args)
         mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", args)
+        mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize(
@@ -525,7 +527,7 @@ class TestNotifyWithStream:
 
         mock_internal_notify.assert_called_once_with(*args)
         assert Event.objects.all().count() == 0
-        mock_log_metric.assert_called_once_with("event-published", args)
+        mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
 
@@ -585,7 +587,7 @@ class TestNotifyWithStream:
         assert Event.objects.all().count() == 1
         assert Event.objects.first().sent_at is None
         assert Event.objects.first().stream == jaiminho_django_project.send.EXAMPLE_STREAM
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
 
@@ -609,7 +611,7 @@ class TestNotifyWithStream:
 
         mock_internal_notify_fail.assert_called_once_with(*args)
 
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args)
+        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize(
