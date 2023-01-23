@@ -120,6 +120,38 @@ class TestValidateEventsRelay:
         "publish_strategy",
         (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
+    def test_relay_failed_event_when_message_is_not_a_tuple(
+        self,
+        mock_log_metric,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        payload = {"b": 1}
+        failed_event = EventFactory(
+            function=dill.dumps(notify),
+            message=dill.dumps(payload),
+        )
+
+        assert Event.objects.all().count() == 1
+
+        with freeze_time("2022-10-31"):
+            call_command(validate_events_relay.Command())
+
+        assert Event.objects.all().count() == 1
+        event = Event.objects.all()[0]
+        assert event == failed_event
+        assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+        mock_internal_notify.assert_called_once()
+        mock_internal_notify.assert_called_with(payload)
+
+    @pytest.mark.parametrize(
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
+    )
     def test_relay_failed_event_from_empty_stream(
         self,
         mock_log_metric,
