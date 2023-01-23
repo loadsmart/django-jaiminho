@@ -42,7 +42,11 @@ class EventRelayer:
 
             try:
                 original_fn = _extract_original_func(event)
-                original_fn(*args, **kwargs)
+                if isinstance(args, tuple):
+                    original_fn(*args, **kwargs)
+                else:
+                    original_fn(args, **kwargs)
+
                 logger.info(f"JAIMINHO-EVENTS-RELAY: Event sent. Event {event}")
 
                 if settings.delete_after_send:
