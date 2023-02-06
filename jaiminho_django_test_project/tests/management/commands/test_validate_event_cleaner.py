@@ -12,7 +12,6 @@ pytestmark = pytest.mark.django_db
 
 
 class TestEventCleanerCommand:
-
     TIME_TO_DELETE = timedelta(days=5)
 
     @pytest.fixture
@@ -70,7 +69,9 @@ class TestEventCleanerCommand:
         assert len(Event.objects.all()) == 4
         call_command(validate_event_cleaner.Command())
         assert len(Event.objects.all()) == 4
-        assert "JAIMINHO-EVENT-CLEANER: Did not found events to be deleted" in caplog.text
+        assert (
+            "JAIMINHO-EVENT-CLEANER: Did not found events to be deleted" in caplog.text
+        )
 
     def test_command_without_time_to_delete_configuration_uses_default_7_days(
         self,

@@ -44,7 +44,9 @@ class PublishOnCommitStrategy(BaseStrategy):
         event = None
         if settings.persist_all_events:
             event = Event.objects.create(**event_data)
-            logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {args}")
+            logger.info(
+                f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {args}"
+            )
 
         on_commit_hook_kwargs = {
             "func": func,
@@ -70,13 +72,15 @@ class KeepOrderStrategy(BaseStrategy):
             stream=stream,
         )
         event = Event.objects.create(**event_data)
-        logger.info(f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {args}")
+        logger.info(
+            f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {args}"
+        )
 
 
 def create_publish_strategy(strategy_type):
     strategy_map = {
         PublishStrategyType.PUBLISH_ON_COMMIT: PublishOnCommitStrategy,
-        PublishStrategyType.KEEP_ORDER: KeepOrderStrategy
+        PublishStrategyType.KEEP_ORDER: KeepOrderStrategy,
     }
 
     try:
@@ -90,13 +94,12 @@ def on_commit_hook(func, event, event_data, args, kwargs):
 
     try:
         func(*args, **kwargs)
-        logger.info(f"JAIMINHO-ON-COMMIT-HOOK: Event sent successfully. Payload: {args}")
+        logger.info(
+            f"JAIMINHO-ON-COMMIT-HOOK: Event sent successfully. Payload: {args}"
+        )
 
         event_published.send(
-            sender=func,
-            event_payload=event_payload,
-            args=args,
-            **kwargs
+            sender=func, event_payload=event_payload, args=args, **kwargs
         )
     except BaseException as exc:
         if not event:
@@ -106,13 +109,19 @@ def on_commit_hook(func, event, event_data, args, kwargs):
             f"JAIMINHO-ON-COMMIT-HOOK: Event failed to be published. Event: {event}, Payload: {args}, "
             f"Exception: {exc}"
         )
-        event_failed_to_publish.send(sender=func, event_payload=event_payload, args=args, **kwargs)
+        event_failed_to_publish.send(
+            sender=func, event_payload=event_payload, args=args, **kwargs
+        )
         return
 
     if event:
         if settings.delete_after_send:
-            logger.info(f"JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send. Event: {event}, Payload: {args}")
+            logger.info(
+                f"JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send. Event: {event}, Payload: {args}"
+            )
             event.delete()
         else:
-            logger.info(f"JAIMINHO-ON-COMMIT-HOOK: Event marked as sent. Event: {event}, Payload: {args}")
+            logger.info(
+                f"JAIMINHO-ON-COMMIT-HOOK: Event marked as sent. Event: {event}, Payload: {args}"
+            )
             event.mark_as_sent()

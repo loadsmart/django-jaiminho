@@ -8,12 +8,15 @@ from jaiminho.constants import PublishStrategyType
 
 class TestSettings:
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     @pytest.mark.parametrize(
         ("persist_all_events", "delete_after_send"), ((True, False), (True, False))
     )
-    def test_load_settings(self, mocker, persist_all_events, delete_after_send, publish_strategy):
+    def test_load_settings(
+        self, mocker, persist_all_events, delete_after_send, publish_strategy
+    ):
         settings_mock = mocker.patch("django.conf.settings")
         time_to_delete = mocker.MagicMock()
         persist_all_events = True

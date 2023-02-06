@@ -16,7 +16,7 @@ class Command(BaseCommand):
             "--run-in-loop",
             action="store_true",
             help="Define if command should run in loop or just once",
-            default=False
+            default=False,
         )
 
         parser.add_argument(
@@ -24,14 +24,14 @@ class Command(BaseCommand):
             nargs="?",
             type=float,
             default=1,
-            help="Define the sleep interval (in seconds) between each loop"
+            help="Define the sleep interval (in seconds) between each loop",
         )
         parser.add_argument(
             "--stream",
             nargs="?",
             type=str,
             default=None,
-            help="Define which stream events should be relayed. If not provided, all events will be relayed."
+            help="Define which stream events should be relayed. If not provided, all events will be relayed.",
         )
 
     def handle(self, *args, **options):
@@ -42,7 +42,6 @@ class Command(BaseCommand):
         print(f"run_in_loop: {run_in_loop}")
         print(f"loop_interval: {loop_interval}")
         print(f"stream: {stream}")
-
         if options["run_in_loop"]:
             log.info("EVENTS-RELAY-COMMAND: Started to relay events in loop mode")
 

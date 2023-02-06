@@ -141,7 +141,9 @@ class TestNotify:
 
         assert not mock_internal_notify.called
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     def test_send_success_should_publish_event(
         self,
         mock_internal_notify,
@@ -154,7 +156,7 @@ class TestNotify:
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
-        args = ({"action": "a", "type": "t", "c": "d"}, )
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify(*args)
 
@@ -163,7 +165,9 @@ class TestNotify:
         assert Event.objects.all().count() == 1
         mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     def test_send_success_should_not_persist_all_events(
         self,
         mock_internal_notify,
@@ -181,7 +185,9 @@ class TestNotify:
         mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
         assert len(callbacks) == 1
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     def test_send_success_should_delete_after_send(
         self,
         mock_internal_notify,
@@ -205,9 +211,13 @@ class TestNotify:
         assert Event.objects.all().count() == 0
         mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
         assert len(callbacks) == 1
-        assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
+        assert (
+            "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
+        )
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     def test_send_success_when_should_not_delete_after_send(
         self,
         mock_log_metric,
@@ -233,7 +243,9 @@ class TestNotify:
         assert event.sent_at == datetime(2022, 1, 1, tzinfo=UTC)
         assert "JAIMINHO-ON-COMMIT-HOOK: Event marked as sent" in caplog.text
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     @pytest.mark.parametrize(
         ("persist_all_events", "delete_after_send"), ((True, False), (True, False))
     )
@@ -259,16 +271,26 @@ class TestNotify:
         assert Event.objects.all().count() == 1
         assert Event.objects.first().sent_at is None
         assert Event.objects.first().stream is None
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
+        mock_log_metric.assert_called_once_with(
+            "event-failed-to-publish", args[0], args=args
+        )
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
     @pytest.mark.parametrize(
-        "exception", (AssertionError, AttributeError, Exception, SystemError, SystemExit)
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
+    @pytest.mark.parametrize(
+        "exception",
+        (AssertionError, AttributeError, Exception, SystemError, SystemExit),
     )
     def test_send_fail_handles_multiple_exceptions_type(
-        self, mock_log_metric, mock_internal_notify_fail, exception, publish_strategy, mocker
+        self,
+        mock_log_metric,
+        mock_internal_notify_fail,
+        exception,
+        publish_strategy,
+        mocker,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
@@ -280,10 +302,14 @@ class TestNotify:
 
         mock_internal_notify_fail.assert_called_once_with(*args)
 
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
+        mock_log_metric.assert_called_once_with(
+            "event-failed-to-publish", args[0], args=args
+        )
         assert len(callbacks) == 1
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     @pytest.mark.parametrize(
         ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
     )
@@ -301,7 +327,7 @@ class TestNotify:
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
 
-        args = ({"action": "a", "type": "t", "c": "d"}, )
+        args = ({"action": "a", "type": "t", "c": "d"},)
 
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify(
@@ -318,7 +344,9 @@ class TestNotify:
         )
         assert len(callbacks) == 1
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     @pytest.mark.parametrize(
         ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
     )
@@ -352,7 +380,9 @@ class TestNotify:
         )
         assert len(callbacks) == 1
 
-    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,))
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
     @pytest.mark.parametrize(
         ("delete_after_send", "persist_all_events"), ((True, False), (True, False))
     )
@@ -387,7 +417,8 @@ class TestNotify:
 
 class TestNotifyWithStream:
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_send_to_stream_success_should_persist_all_events(
         self,
@@ -406,11 +437,15 @@ class TestNotifyWithStream:
             jaiminho_django_test_project.send.notify_to_stream(payload)
 
         assert Event.objects.all().count() == 1
-        assert Event.objects.get().stream == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        assert (
+            Event.objects.get().stream
+            == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        )
         assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text
 
     @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER)
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
     def test_send_to_stream_success_should_persist_strategy(
         self,
@@ -431,9 +466,7 @@ class TestNotifyWithStream:
         assert Event.objects.all().count() == 1
         assert Event.objects.get().strategy == publish_strategy
 
-    @pytest.mark.parametrize(
-        "publish_strategy", (PublishStrategyType.KEEP_ORDER,)
-    )
+    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
     @pytest.mark.parametrize(
         ("persist_all_events", "delete_after_send"), ((True, False), (True, False))
     )
@@ -492,10 +525,10 @@ class TestNotifyWithStream:
         mock_log_metric,
         mock_should_not_delete_after_send,
         publish_strategy,
-        mocker
+        mocker,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        args = ({"action": "a", "type": "t", "c": "d"}, )
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify_to_stream(*args)
         mock_internal_notify.assert_called_once_with(*args)
@@ -514,7 +547,7 @@ class TestNotifyWithStream:
         mock_should_delete_after_send,
         caplog,
         publish_strategy,
-        mocker
+        mocker,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
@@ -529,7 +562,9 @@ class TestNotifyWithStream:
         assert Event.objects.all().count() == 0
         mock_log_metric.assert_called_once_with("event-published", args[0], args=args)
         assert len(callbacks) == 1
-        assert "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
+        assert (
+            "JAIMINHO-ON-COMMIT-HOOK: Event deleted after success send" in caplog.text
+        )
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
@@ -542,7 +577,7 @@ class TestNotifyWithStream:
         mock_should_persist_all_events,
         caplog,
         publish_strategy,
-        mocker
+        mocker,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
@@ -555,7 +590,10 @@ class TestNotifyWithStream:
 
         assert Event.objects.all().count() == 1
         event = Event.objects.first()
-        assert Event.objects.first().stream == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        assert (
+            Event.objects.first().stream
+            == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        )
         assert event.sent_at == datetime(2022, 1, 1, tzinfo=UTC)
         assert "JAIMINHO-ON-COMMIT-HOOK: Event marked as sent" in caplog.text
 
@@ -586,32 +624,44 @@ class TestNotifyWithStream:
         mock_internal_notify_fail.assert_called_once_with(*args)
         assert Event.objects.all().count() == 1
         assert Event.objects.first().sent_at is None
-        assert Event.objects.first().stream == jaiminho_django_test_project.send.EXAMPLE_STREAM
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
+        assert (
+            Event.objects.first().stream
+            == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        )
+        mock_log_metric.assert_called_once_with(
+            "event-failed-to-publish", args[0], args=args
+        )
         assert len(callbacks) == 1
         assert "JAIMINHO-ON-COMMIT-HOOK: Event failed to be published" in caplog.text
-
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
     )
     @pytest.mark.parametrize(
-        "exception", (AssertionError, AttributeError, Exception, SystemError, SystemExit)
+        "exception",
+        (AssertionError, AttributeError, Exception, SystemError, SystemExit),
     )
     def test_send_to_stream_fail_handles_multiple_exceptions_type(
-        self, mock_log_metric, mock_internal_notify_fail, exception, publish_strategy, mocker
+        self,
+        mock_log_metric,
+        mock_internal_notify_fail,
+        exception,
+        publish_strategy,
+        mocker,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
 
         mock_internal_notify_fail.side_effect = exception
 
-        args = ({"action": "a", "type": "t", "c": "d"}, )
+        args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify_to_stream(*args)
 
         mock_internal_notify_fail.assert_called_once_with(*args)
 
-        mock_log_metric.assert_called_once_with("event-failed-to-publish", args[0], args=args)
+        mock_log_metric.assert_called_once_with(
+            "event-failed-to-publish", args[0], args=args
+        )
         assert len(callbacks) == 1
 
     @pytest.mark.parametrize(
@@ -628,14 +678,16 @@ class TestNotifyWithStream:
         mocker,
         delete_after_send,
         persist_all_events,
-        publish_strategy
+        publish_strategy,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
 
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_test_project.send.notify_to_stream({"action": "a", "type": "t", "c": "d"})
+            jaiminho_django_test_project.send.notify_to_stream(
+                {"action": "a", "type": "t", "c": "d"}
+            )
         mock_event_published_signal.assert_called_once()
         assert len(callbacks) == 1
 
@@ -653,14 +705,16 @@ class TestNotifyWithStream:
         mocker,
         delete_after_send,
         persist_all_events,
-        publish_strategy
+        publish_strategy,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
 
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
-            jaiminho_django_test_project.send.notify_to_stream({"action": "a", "type": "t", "c": "d"})
+            jaiminho_django_test_project.send.notify_to_stream(
+                {"action": "a", "type": "t", "c": "d"}
+            )
 
         mock_event_failed_to_publish_signal.assert_called_once()
         assert len(callbacks) == 1
@@ -679,14 +733,16 @@ class TestNotifyWithStream:
         mocker,
         delete_after_send,
         persist_all_events,
-        publish_strategy
+        publish_strategy,
     ):
         mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
         mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
         mocker.patch("jaiminho.send.settings.delete_after_send", persist_all_events)
-        args = ({"action": "a", "type": "t", "c": "d"}, )
+        args = ({"action": "a", "type": "t", "c": "d"},)
         param = {"param": 1}
-        jaiminho_django_test_project.send.notify_to_stream(*args, encoder=encoder, param=param)
+        jaiminho_django_test_project.send.notify_to_stream(
+            *args, encoder=encoder, param=param
+        )
         assert Event.objects.all().count() == 1
         event = Event.objects.first()
         assert event.stream == jaiminho_django_test_project.send.EXAMPLE_STREAM
@@ -711,16 +767,29 @@ class TestNofityWithStreamOverwritingStrategy:
         mocker,
     ):
         strategy = KeepOrderStrategy()
-        mocker.patch("jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT)
-        create_publish_strategy_mock = mocker.patch("jaiminho.send.create_publish_strategy", autospec=True, return_value=strategy)
+        mocker.patch(
+            "jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT
+        )
+        create_publish_strategy_mock = mocker.patch(
+            "jaiminho.send.create_publish_strategy",
+            autospec=True,
+            return_value=strategy,
+        )
 
         payload = {"action": "a", "type": "t", "c": "d"}
         with TestCase.captureOnCommitCallbacks(execute=True):
-            jaiminho_django_test_project.send.notify_to_stream_overwriting_strategy(payload)
+            jaiminho_django_test_project.send.notify_to_stream_overwriting_strategy(
+                payload
+            )
 
-        create_publish_strategy_mock.assert_called_once_with(PublishStrategyType.KEEP_ORDER)
+        create_publish_strategy_mock.assert_called_once_with(
+            PublishStrategyType.KEEP_ORDER
+        )
         assert Event.objects.all().count() == 1
-        assert Event.objects.get().stream == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        assert (
+            Event.objects.get().stream
+            == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        )
         assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text
 
     def test_send_to_stream_should_persist_strategy(
@@ -733,13 +802,23 @@ class TestNofityWithStreamOverwritingStrategy:
         mocker,
     ):
         strategy = KeepOrderStrategy()
-        mocker.patch("jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT)
-        create_publish_strategy_mock = mocker.patch("jaiminho.send.create_publish_strategy", autospec=True, return_value=strategy)
+        mocker.patch(
+            "jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT
+        )
+        create_publish_strategy_mock = mocker.patch(
+            "jaiminho.send.create_publish_strategy",
+            autospec=True,
+            return_value=strategy,
+        )
 
         payload = {"action": "a", "type": "t", "c": "d"}
         with TestCase.captureOnCommitCallbacks(execute=True):
-            jaiminho_django_test_project.send.notify_to_stream_overwriting_strategy(payload)
+            jaiminho_django_test_project.send.notify_to_stream_overwriting_strategy(
+                payload
+            )
 
-        create_publish_strategy_mock.assert_called_once_with(PublishStrategyType.KEEP_ORDER)
+        create_publish_strategy_mock.assert_called_once_with(
+            PublishStrategyType.KEEP_ORDER
+        )
         assert Event.objects.all().count() == 1
         assert Event.objects.get().strategy == PublishStrategyType.KEEP_ORDER

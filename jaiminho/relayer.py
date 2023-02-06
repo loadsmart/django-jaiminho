@@ -3,7 +3,11 @@ import dill
 
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
-from jaiminho.signals import event_published_by_events_relay, event_failed_to_publish_by_events_relay, get_event_payload
+from jaiminho.signals import (
+    event_published_by_events_relay,
+    event_failed_to_publish_by_events_relay,
+    get_event_payload,
+)
 from jaiminho import settings
 
 
@@ -27,9 +31,7 @@ class EventRelayer:
         events_qs = Event.objects.filter(sent_at__isnull=True)
         events_qs = events_qs.filter(stream=stream)
 
-        events_qs = events_qs.order_by(
-            "created_at"
-        )
+        events_qs = events_qs.order_by("created_at")
 
         if not events_qs:
             logger.info("No failed events found.")
@@ -66,7 +68,8 @@ class EventRelayer:
 
             except (ModuleNotFoundError, AttributeError) as e:
                 logger.warning(
-                    f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}")
+                    f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}"
+                )
                 _capture_exception(e)
 
                 if self.__stuck_on_error(event):
@@ -77,7 +80,8 @@ class EventRelayer:
 
             except BaseException as e:
                 logger.warning(
-                    f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}")
+                    f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}"
+                )
                 original_fn = _extract_original_func(event)
                 event_failed_to_publish_by_events_relay.send(
                     sender=original_fn, event_payload=event_payload, args=args, **kwargs

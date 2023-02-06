@@ -10,12 +10,11 @@ except ImportError:
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
 
-    if version.get_version() >= '3.2':
+    if version.get_version() >= "3.2":
         auto_field_class = models.BigAutoField
     else:
         auto_field_class = models.AutoField

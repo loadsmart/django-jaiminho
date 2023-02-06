@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('jaiminho', '0003_remove_event_action_remove_event_encoder_and_more'),
+        ("jaiminho", "0003_remove_event_action_remove_event_encoder_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='event',
-            name='stream',
+            model_name="event",
+            name="stream",
             field=models.CharField(max_length=100, null=True),
         ),
     ]
