@@ -39,7 +39,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    packages=find_packages(exclude=["docs", "tests", "jaiminho_django_project"]),
+    packages=find_packages(exclude=["docs", "tests", "jaiminho_django_test_project"]),
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4",
     install_requires=["Django", "sentry_sdk", "dill==0.3.4"],
     project_urls={
