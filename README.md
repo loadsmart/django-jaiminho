@@ -148,3 +148,7 @@ If you want to improve or suggest improvements, check our CONTRIBUTE.md file.
 ## License
 
 This project is licensed under MIT License.
+
+## Security
+
+If you have any security concern or report feel free to reach out to security@loadsmart.com;
