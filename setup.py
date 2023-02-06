@@ -28,7 +28,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/loadsmart/jaiminho",
     author="Loadsmart",
-    author_email="engineering@loadsmart.com",
+    author_email="jaiminho@loadsmart.com",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
