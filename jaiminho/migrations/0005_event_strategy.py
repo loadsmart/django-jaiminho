@@ -4,15 +4,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('jaiminho', '0004_event_stream'),
+        ("jaiminho", "0004_event_stream"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='event',
-            name='strategy',
-            field=models.CharField(choices=[('publish-on-commit', 'Publish on Commit'), ('keep-order', 'Keep Order')], max_length=100, null=True),
+            model_name="event",
+            name="strategy",
+            field=models.CharField(
+                choices=[
+                    ("publish-on-commit", "Publish on Commit"),
+                    ("keep-order", "Keep Order"),
+                ],
+                max_length=100,
+                null=True,
+            ),
         ),
     ]

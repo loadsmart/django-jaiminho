@@ -4,49 +4,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('jaiminho', '0002_event_encoder_event_function_signature_event_options'),
+        ("jaiminho", "0002_event_encoder_event_function_signature_event_options"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='event',
-            name='action',
+            model_name="event",
+            name="action",
         ),
         migrations.RemoveField(
-            model_name='event',
-            name='encoder',
+            model_name="event",
+            name="encoder",
         ),
         migrations.RemoveField(
-            model_name='event',
-            name='function_signature',
+            model_name="event",
+            name="function_signature",
         ),
         migrations.RemoveField(
-            model_name='event',
-            name='options',
+            model_name="event",
+            name="options",
         ),
         migrations.RemoveField(
-            model_name='event',
-            name='payload',
+            model_name="event",
+            name="payload",
         ),
         migrations.RemoveField(
-            model_name='event',
-            name='type',
+            model_name="event",
+            name="type",
         ),
         migrations.AddField(
-            model_name='event',
-            name='function',
+            model_name="event",
+            name="function",
             field=models.BinaryField(max_length=65535, null=True),
         ),
         migrations.AddField(
-            model_name='event',
-            name='kwargs',
+            model_name="event",
+            name="kwargs",
             field=models.BinaryField(max_length=65535, null=True),
         ),
         migrations.AddField(
-            model_name='event',
-            name='message',
+            model_name="event",
+            name="message",
             field=models.BinaryField(max_length=65535, null=True),
         ),
     ]

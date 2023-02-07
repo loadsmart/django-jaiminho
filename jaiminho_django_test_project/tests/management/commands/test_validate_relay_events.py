@@ -13,8 +13,8 @@ from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.relayer import EventRelayer
 from jaiminho.tests.factories import EventFactory
-from jaiminho_django_project.management.commands import validate_events_relay
-from jaiminho_django_project.send import (
+from jaiminho_django_test_project.management.commands import validate_events_relay
+from jaiminho_django_test_project.send import (
     notify,
     notify_without_decorator,
     notify_to_stream,
@@ -26,12 +26,12 @@ pytestmark = pytest.mark.django_db
 class TestValidateEventsRelay:
     @pytest.fixture
     def mock_log_metric(self, mocker):
-        return mocker.patch("jaiminho_django_project.app.signals.log_metric")
+        return mocker.patch("jaiminho_django_test_project.app.signals.log_metric")
 
     @pytest.fixture
     def mock_capture_exception(self, mocker):
         return mocker.patch(
-            "jaiminho_django_project.management.commands.validate_events_relay.Command.capture_message_fn"
+            "jaiminho_django_test_project.management.commands.validate_events_relay.Command.capture_message_fn"
         )
 
     @pytest.fixture
@@ -50,19 +50,18 @@ class TestValidateEventsRelay:
 
     @pytest.fixture
     def mock_internal_notify(self, mocker):
-        return mocker.patch("jaiminho_django_project.send.internal_notify")
+        return mocker.patch("jaiminho_django_test_project.send.internal_notify")
 
     @pytest.fixture
     def mock_internal_notify_fail(self, mocker):
-        mock = mocker.patch("jaiminho_django_project.send.internal_notify")
+        mock = mocker.patch("jaiminho_django_test_project.send.internal_notify")
         mock.side_effect = Exception("Some error")
         return mock
 
     @pytest.fixture
     def failed_event(self):
         return EventFactory(
-            function=dill.dumps(notify),
-            message=dill.dumps(({"b": 1},))
+            function=dill.dumps(notify), message=dill.dumps(({"b": 1},))
         )
 
     @pytest.fixture
@@ -166,12 +165,14 @@ class TestValidateEventsRelay:
             message=dill.dumps(({"b": 1},)),
         )
         second_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-stream",
-            message = dill.dumps(({"b": 2},)),
+            function=dill.dumps(notify_to_stream),
+            stream="my-stream",
+            message=dill.dumps(({"b": 2},)),
         )
         third_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-other-stream",
-            message = dill.dumps(({"b": 3},)),
+            function=dill.dumps(notify_to_stream),
+            stream="my-other-stream",
+            message=dill.dumps(({"b": 3},)),
         )
         assert Event.objects.all().count() == 3
 
@@ -205,11 +206,13 @@ class TestValidateEventsRelay:
             message=dill.dumps(({"b": 1},)),
         )
         second_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-stream",
+            function=dill.dumps(notify_to_stream),
+            stream="my-stream",
             message=dill.dumps(({"b": 2},)),
         )
         third_event = EventFactory(
-            function=dill.dumps(notify_to_stream), stream="my-other-stream",
+            function=dill.dumps(notify_to_stream),
+            stream="my-other-stream",
             message=dill.dumps(({"b": 3},)),
         )
         assert Event.objects.all().count() == 3
@@ -301,7 +304,7 @@ class TestValidateEventsRelay:
         event = EventFactory(
             function=dill.dumps(notify_to_stream),
             stream="my-stream",
-            message=dill.dumps(args)
+            message=dill.dumps(args),
         )
 
         with freeze_time("2022-10-31"):
@@ -393,7 +396,7 @@ class TestValidateEventsRelay:
             "event-published-through-outbox",
             expected_args[0],
             args=expected_args,
-            **dill.loads(failed_event_with_kwargs.kwargs)
+            **dill.loads(failed_event_with_kwargs.kwargs),
         )
 
     @pytest.mark.parametrize(
@@ -417,7 +420,9 @@ class TestValidateEventsRelay:
         mock_event_failed_to_publish_signal.assert_not_called()
         expected_args = dill.loads(failed_event.message)
         mock_log_metric.assert_called_once_with(
-            "event-failed-to-publish-through-outbox", expected_args[0], args=expected_args
+            "event-failed-to-publish-through-outbox",
+            expected_args[0],
+            args=expected_args,
         )
 
     @pytest.mark.parametrize(
@@ -444,7 +449,7 @@ class TestValidateEventsRelay:
             "event-failed-to-publish-through-outbox",
             expected_args[0],
             args=expected_args,
-            **dill.loads(failed_event_with_kwargs.kwargs)
+            **dill.loads(failed_event_with_kwargs.kwargs),
         )
 
     @pytest.mark.parametrize(
@@ -506,8 +511,8 @@ class TestValidateEventsRelay:
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
-        args1 = ({"b": 1}, )
-        args2 = ({"b": 2}, )
+        args1 = ({"b": 1},)
+        args2 = ({"b": 2},)
         event_1 = EventFactory(
             function=dill.dumps(notify),
             kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "1"}),
@@ -688,9 +693,7 @@ class TestValidateEventsRelay:
             call_command(validate_events_relay.Command())
 
         mock_internal_notify.assert_called_once()
-        mock_internal_notify.assert_called_with(
-            args[0], encoder=DjangoJSONEncoder
-        )
+        mock_internal_notify.assert_called_with(args[0], encoder=DjangoJSONEncoder)
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
@@ -726,7 +729,8 @@ class TestValidateEventsRelay:
     def test_raise_exception_when_module_does_not_exist_anymore(
         self, mocker, caplog, mock_capture_exception_fn, publish_strategy
     ):
-        missing_module = b"\x80\x04\x95/\x00\x00\x00\x00\x00\x00\x00\x8c jaiminho_django_project.send_two\x94\x8c\x06notify\x94\x93\x94."
+        missing_module = b'\x80\x04\x95.\x00\x00\x00\x00\x00\x00\x00\x8c"jaiminho_django_test_project.send2\x94\x8c\x03foo\x94\x93\x94.'
+
         mocker.patch(
             "jaiminho.send.settings.default_capture_exception",
             mock_capture_exception_fn,
@@ -738,9 +742,9 @@ class TestValidateEventsRelay:
         call_command(validate_events_relay.Command())
 
         assert "Function does not exist anymore" in caplog.text
-        assert "No module named 'jaiminho_django_project.send_two'" in caplog.text
+        assert "No module named 'jaiminho_django_test_project.send2'" in caplog.text
         capture_exception_call = mock_capture_exception_fn.call_args[0][0]
-        assert "No module named 'jaiminho_django_project.send_two'" == str(
+        assert "No module named 'jaiminho_django_test_project.send2'" == str(
             capture_exception_call
         )
 
@@ -753,7 +757,7 @@ class TestValidateEventsRelay:
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
-        missing_function = b"\x80\x04\x955\x00\x00\x00\x00\x00\x00\x00\x8c\x1cjaiminho_django_project.send\x94\x8c\x10missing_function\x94\x93\x94."
+        missing_function = b"\x80\x04\x957\x00\x00\x00\x00\x00\x00\x00\x8c!jaiminho_django_test_project.send\x94\x8c\rnever_existed\x94\x93\x94."
         EventFactory(
             function=missing_function,
         )
@@ -761,7 +765,7 @@ class TestValidateEventsRelay:
         call_command(validate_events_relay.Command())
 
         assert "Function does not exist anymore" in caplog.text
-        assert "Can't get attribute 'missing_function' on" in caplog.text
+        assert "Can't get attribute 'never_existed' on" in caplog.text
 
     @pytest.mark.parametrize(
         "publish_strategy",

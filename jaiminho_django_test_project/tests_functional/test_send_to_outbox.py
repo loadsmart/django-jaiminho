@@ -5,10 +5,10 @@ import shutil
 from django.test import TestCase
 from django.core.management import call_command
 
-from jaiminho_django_project.management.commands import validate_events_relay
+from jaiminho_django_test_project.management.commands import validate_events_relay
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
-import jaiminho_django_project.send
+import jaiminho_django_test_project.send
 
 
 EVENTS_FOLDER_PATH = "./outbox_events_confirmation"
@@ -26,8 +26,12 @@ def events_confirmation_folder():
 
 @pytest.mark.django_db
 class TestSendToOutbox:
-    def test_should_relay_when_keep_order_strategy_from_decorator(self, mocker, events_confirmation_folder):
-        mocker.patch("jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT)
+    def test_should_relay_when_keep_order_strategy_from_decorator(
+        self, mocker, events_confirmation_folder
+    ):
+        mocker.patch(
+            "jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT
+        )
         assert Event.objects.count() == 0
 
         first_args = [{"some": "data"}]
@@ -36,8 +40,12 @@ class TestSendToOutbox:
         second_file_path = f"{EVENTS_FOLDER_PATH}/event_2.json"
 
         with TestCase.captureOnCommitCallbacks(execute=True):
-            jaiminho_django_project.send.notify_functional_to_stream_overwriting_strategy(*first_args, filepath=first_file_path)
-            jaiminho_django_project.send.notify_functional_to_stream_overwriting_strategy(*second_args, filepath=second_file_path)
+            jaiminho_django_test_project.send.notify_functional_to_stream_overwriting_strategy(
+                *first_args, filepath=first_file_path
+            )
+            jaiminho_django_test_project.send.notify_functional_to_stream_overwriting_strategy(
+                *second_args, filepath=second_file_path
+            )
 
         assert Event.objects.count() == 2
         outbox_events = Event.objects.all()
@@ -48,7 +56,7 @@ class TestSendToOutbox:
         call_command(
             validate_events_relay.Command(),
             run_in_loop=False,
-            stream=jaiminho_django_project.send.EXAMPLE_STREAM
+            stream=jaiminho_django_test_project.send.EXAMPLE_STREAM,
         )
 
         relayed_events = Event.objects.all().order_by("id")
@@ -67,5 +75,5 @@ class TestSendToOutbox:
 
     def assertEvent(self, event):
         assert event.strategy == PublishStrategyType.KEEP_ORDER
-        assert event.stream == jaiminho_django_project.send.EXAMPLE_STREAM
+        assert event.stream == jaiminho_django_test_project.send.EXAMPLE_STREAM
         assert event.sent_at is None

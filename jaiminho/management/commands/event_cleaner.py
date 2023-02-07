@@ -23,9 +23,14 @@ class Command(BaseCommand):
         )
 
         if events_to_delete.count() == 0:
-            logger.info("JAIMINHO-EVENT-CLEANER: Did not found events to be deleted. Finishing execution...")
+            logger.info(
+                "JAIMINHO-EVENT-CLEANER: Did not found events to be deleted. Finishing execution..."
+            )
             return
 
         events_to_delete.delete()
 
-        logger.info("JAIMINHO-EVENT-CLEANER: Successfully deleted %s events", len(events_to_delete))
+        logger.info(
+            "JAIMINHO-EVENT-CLEANER: Successfully deleted %s events",
+            len(events_to_delete),
+        )

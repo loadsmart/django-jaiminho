@@ -20,19 +20,6 @@ commands:
             coveralls
 
 jobs:
-  tests36:
-    working_directory: /home/circleci/project
-    docker:
-      - image: circleci/python:3.6-stretch
-    steps:
-      - checkout
-      - install-dependencies
-      - run:
-          command: tox -e py36
-      - upload-coverage:
-          pyversion: py36
-      - store_test_results:
-          path: build
   tests37:
     working_directory: /home/circleci/project
     docker:
@@ -105,11 +92,6 @@ workflows:
   version: 2
   main:
     jobs:
-      - tests36:
-          context: org-global
-          filters:
-            tags:
-              only: /^\d+\.\d+\.\d+$/
       - tests37:
           context: org-global
           filters:
@@ -136,7 +118,6 @@ workflows:
           name: release
           context: org-global
           requires:
-            - tests36
             - tests37
             - tests38
             - tests39
