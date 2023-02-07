@@ -71,22 +71,6 @@ jobs:
           root: .
           paths:
             - "dist"
-  publish-docs:
-    docker:
-      - image: cimg/python:3.9.6
-    working_directory: ~/repo
-
-    steps:
-      - checkout
-      - run:
-          name: install dependencies
-          command: |
-            pip install awscli sphinx_rtd_theme sphinx
-
-      - run:
-          name: publish docs
-          command: |
-            cd docs && make publish
 
 workflows:
   version: 2
@@ -105,13 +89,6 @@ workflows:
       - tests39:
           context: org-global
           filters:
-            tags:
-              only: /^\d+\.\d+\.\d+$/
-      - publish-docs:
-          context: org-global
-          filters:
-            branches:
-              only: /master/
             tags:
               only: /^\d+\.\d+\.\d+$/
       - release:
