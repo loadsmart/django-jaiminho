@@ -33,4 +33,5 @@ dist: clean
 	python setup.py bdist_wheel --universal
 
 release: dist
-	curl --show-error --fail -F package=@`find dist -name "jaiminho-*.whl"` $(PRIVATE_PYPI_UPLOAD_URL)
+	pip install twine
+	python -m twine upload --non-interactive --username __token__ --password ${PYPI_TOKEN} dist/*
