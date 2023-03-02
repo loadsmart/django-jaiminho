@@ -4,8 +4,8 @@ metadata:
   name: jaiminho
   description: Python library generated using cookiecutter template
   annotations:
-    github.com/project-slug: loadsmart/jaiminho
-    circleci.com/project-slug: github/loadsmart/jaiminho
+    github.com/project-slug: loadsmart/django-jaiminho
+    circleci.com/project-slug: github/loadsmart/django-jaiminho
   tags:
     - python
 spec:

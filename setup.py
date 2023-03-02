@@ -26,7 +26,7 @@ setup(
     description="Python library generated using cookiecutter template",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/loadsmart/jaiminho",
+    url="https://github.com/loadsmart/django-jaiminho",
     author="Loadsmart",
     author_email="jaiminho@loadsmart.com",
     classifiers=[
@@ -43,7 +43,8 @@ setup(
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4",
     install_requires=["Django", "sentry_sdk", "dill==0.3.6"],
     project_urls={
-        "Documentation": "https://docs.loadsmart.io/jaiminho",
-        "Source": "https://github.com/loadsmart/jaiminho",
+        "Documentation": "https://github.com/loadsmart/django-jaiminho/blob/master/README.md",
+        "Source": "https://github.com/loadsmart/django-jaiminho",
+        "Changelog": "https://github.com/loadsmart/django-jaiminho/blob/master/CHANGELOG.md",
     },
 )
