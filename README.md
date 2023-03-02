@@ -46,7 +46,7 @@ JAIMINHO_CONFIG = {
 ### Configuration options
 
 - `PUBLISH_STRATEGY` - Strategy used to publish events (publish-on-commit, keep-order)
-- `PERSIST_ALL_EVENTS` - Saves all events and not only the ones that fail, default is `False`. Only applicable for `"PUBLISH_STRATEGY": "publish-on-commit"` since all events needs to be stored on keep-order strategy. 
+- `PERSIST_ALL_EVENTS` - Saves all events and not only the ones that fail, default is `False`. Only applicable for `{ "PUBLISH_STRATEGY": "publish-on-commit" }` since all events needs to be stored on keep-order strategy. 
 - `DELETE_AFTER_SEND` - Delete the event from the outbox table immediately, after a successful send
 - `DEFAULT_ENCODER` - Default Encoder for the payload (overwritable in the function call)
 
@@ -75,7 +75,7 @@ Jaiminho triggers the following Django signals:
 | Signal                  | Description                                                                     |
 |-------------------------|---------------------------------------------------------------------------------|
 | event_published         | Triggered when an event is sent successfully                                    |
-| event_failed_to_publish | Triggered when an event is not sent, being added to the Outbox table queued     |
+| event_failed_to_publish | Triggered when an event is not sent, being added to the Outbox table queue      |
 
 
 ### How to collect metrics from Jaiminho?
