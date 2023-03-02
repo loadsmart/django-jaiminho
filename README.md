@@ -1,11 +1,10 @@
 # jaiminho
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
-[![codecov](https://codecov.io/gh/loadsmart/jaiminho/branch/master/graph/badge.svg?token=gf7apAoU7A)](https://codecov.io/gh/loadsmart/jaiminho)
 
 A broker agnostic implementation of outbox and other message resilience patterns for django apps. 
 
-![Jaiminho](https://github.com/loadsmart/jaiminho/blob/master/docs/images/jaiminho.jpg?raw=true)
+![Jaiminho](https://github.com/loadsmart/django-jaiminho/blob/master/assets/jaiminho.jpg?raw=true)
 
 ## Installation
 
@@ -64,7 +63,7 @@ through relayer. Despite we can decrease the delay to execute the decorated func
 
 
 ### Relay Command
-We already provide a command to relay items from DB, [EventRelayCommand](https://github.com/loadsmart/jaiminho/tree/master/jaiminho/management/event_relay.py). The way you should configure depends on the strategy you choose. 
+We already provide a command to relay items from DB, [EventRelayCommand](https://github.com/loadsmart/django-jaiminho/blob/master/jaiminho/management/commands/events_relay.py). The way you should configure depends on the strategy you choose. 
 For example, on **Publish on Commit Strategy** you can configure a cronjob to run every a couple of minutes since only failed items are published by the command relay. If you are using **Keep Order Strategy**, you should run relay command in loop mode as all items will be published by the command, e.g `call_command(events_relay.Command(), run_in_loop=True, loop_interval=0.1)`.  
 
 
@@ -99,7 +98,7 @@ def on_event_send_error(sender, event_payload, **kwargs):
 
 ### How to clean older events
 
-You can use Jaiminho's [EventCleanerCommand](https://github.com/loadsmart/jaiminho/tree/master/jaiminho/management/event_cleaner.py) in order to do that. It will query for all events that were sent before a given time interval (e.g. last 7 days) and will delete them from the outbox table.
+You can use Jaiminho's [EventCleanerCommand](https://github.com/loadsmart/django-jaiminho/blob/master/jaiminho/management/commands/event_cleaner.py) in order to do that. It will query for all events that were sent before a given time interval (e.g. last 7 days) and will delete them from the outbox table.
 
 The default time interval is `7 days`. You can use the `TIME_TO_DELETE` setting to change it. It should be added to `JAIMINHO_CONFIG` and must be a valid [timedelta](https://docs.python.org/3/library/datetime.html#timedelta-objects).
 
