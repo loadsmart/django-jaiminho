@@ -2,7 +2,7 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
-A broker agnostic implementation of outbox and other message resilience patterns for django apps. 
+A broker agnostic implementation of the outbox and other message resilience patterns for Django apps. 
 
 ![Jaiminho](https://github.com/loadsmart/django-jaiminho/blob/master/assets/jaiminho.jpg?raw=true)
 
@@ -13,12 +13,12 @@ A broker agnostic implementation of outbox and other message resilience patterns
 python -m pip install jaiminho
 ```
 
-Add `jaiminho` in the `INSTALLED_APPS` section of your Django app
+Add `jaiminho` to the `INSTALLED_APPS` section of your Django app
 
 ## Usage
 
-We provide a @save_to_outbox decorator that you can use in the functions responsible to communicate with external systems (brokers, external APIs, etc). 
-Behind the scenes, jaiminho can store those functions calls in a local table in the same database within the current transaction. It can relay those functions calls after a success commit and/or a separate relay command, fixing the dual writes issue.
+Jaiminho provides a `@save_to_outbox` decorator that you can use in your functions responsible for communicating with external systems such as brokers, external APIs, etc.
+Behind the scenes, jaiminho stores those function calls into a local table of the same database within the current transaction. It relays those calls after a successful commit - or by directly calling its `relay` command - fixing the dual writes issue.
 
 ```python
 from jaiminho.send import save_to_outbox
@@ -39,27 +39,27 @@ JAIMINHO_CONFIG = {
     "DELETE_AFTER_SEND": True,
     "DEFAULT_ENCODER": DjangoJSONEncoder,
     "PUBLISH_STRATEGY: "publish-on-commit"
-    }
+}
 
 ```
 
 ### Configuration options
 
-- PUBLISH_STRATEGY - Which strategy use to publish events (publish-on-commit, keep-order)
-- PERSIST_ALL_EVENTS - Saves all events and not only the ones that fail, default is False. Only applicable for `"PUBLISH_STRATEGY": "publish-on-commit"` since all events needs to be stored on keep-order strategy. 
-- DELETE_AFTER_SEND - Delete the event from the outbox table immediately after a successful send
-- DEFAULT_ENCODER - Default Encoder for the payload (overwritable in the function call)
+- `PUBLISH_STRATEGY` - Strategy used to publish events (publish-on-commit, keep-order)
+- `PERSIST_ALL_EVENTS` - Saves all events and not only the ones that fail, default is `False`. Only applicable for `"PUBLISH_STRATEGY": "publish-on-commit"` since all events needs to be stored on keep-order strategy. 
+- `DELETE_AFTER_SEND` - Delete the event from the outbox table immediately, after a successful send
+- `DEFAULT_ENCODER` - Default Encoder for the payload (overwritable in the function call)
 
 ### Strategies
 
 #### Keep Order
-This strategy is similar to transactional outbox [described by Chris Richardson](https://microservices.io/patterns/data/transactional-outbox.html). The decorated function intercepts the function call and saves it on local DB to be executed later. A separate command relayer will keep polling local DB and executing those functions in the same order it was stored. 
-Be carefully with this approach, **if any execution fails, the relayer will get stuck**. Otherwise, would not possible to guarantee delivery order.  
+This strategy is similar to transactional outbox [described by Chris Richardson](https://microservices.io/patterns/data/transactional-outbox.html). The decorated function intercepts the function call and saves it on the local DB to be executed later. A separate command relayer will keep polling local DB and executing those functions in the same order it was stored. 
+Be carefully with this approach, **if any execution fails, the relayer will get stuck** as it would not be possible to guarantee delivery order.  
 
 #### Publish on commit
 
 This strategy will always execute the decorated function after current transaction commit. With this approach, we don't depend on a relayer (separate process / cronjob) to execute the decorated function and deliver the message. Failed items will only be executed
-through relayer. Despite we can decrease the delay to execute the decorated function with this approach, **we cannot guarantee delivery order**.
+through relayer. Although we can decrease the delay to execute the decorated function with this approach, **we cannot guarantee delivery order**.
 
 
 ### Relay Command
@@ -72,10 +72,10 @@ For example, on **Publish on Commit Strategy** you can configure a cronjob to ru
 
 Jaiminho triggers the following Django signals:
 
-| Signal                  | Description                                                                   |
-|-------------------------|--------------------------------------------------------------------------------|
-| event_published         | Triggered when an event is sent successfully                                   |
-| event_failed_to_publish | Triggered when an event failed to be send and it's enqueue to the Outbox table |
+| Signal                  | Description                                                                     |
+|-------------------------|---------------------------------------------------------------------------------|
+| event_published         | Triggered when an event is sent successfully                                    |
+| event_failed_to_publish | Triggered when an event is not sent, being added to the Outbox table queued     |
 
 
 ### How to collect metrics from Jaiminho?
@@ -104,7 +104,7 @@ The default time interval is `7 days`. You can use the `TIME_TO_DELETE` setting 
 
 ### Relay per stream and Overwrite publish strategy
 
-Different streams can have different requirements. You can save separate events per streams by using @save_to_outbox_stream decorator:
+Different streams can have different requirements. You can save separate events per streams by using the `@save_to_outbox_stream` decorator:
 
 ````python
 @save_to_outbox_stream("my-stream")
@@ -127,7 +127,7 @@ And then, run relay command with stream filter option
 python manage.py relay_event True 0.1 my-stream
 ````
 
-Where True is option for run_in_loop, 0.1 is loop_interval and my_stream is the stream name.
+In the example above, `True` is the option for run_in_loop; `0.1` for loop_interval; and `my_stream` is the name of the stream.
 
 
 ## Development
