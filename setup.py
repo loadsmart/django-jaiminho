@@ -23,7 +23,7 @@ version = os.getenv("CIRCLE_TAG", os.getenv("CIRCLE_SHA1")) or "0.0.0"
 setup(
     name="django-jaiminho",
     version=version,
-    description="Python library generated using cookiecutter template",
+    description="A broker agnostic implementation of outbox and other message resilience patterns for Django apps",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/loadsmart/django-jaiminho",
