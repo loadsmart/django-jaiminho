@@ -141,7 +141,7 @@ tox -e py39
 ```
 ## Collaboration
 
-If you want to improve or suggest improvements, check our CONTRIBUTE.md file.
+If you want to improve or suggest improvements, check our [CONTRIBUTING.md](https://github.com/loadsmart/django-jaiminho/blob/master/CONTRIBUTING.md) file.
 
 
 ## License
