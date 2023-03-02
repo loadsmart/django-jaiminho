@@ -5,7 +5,7 @@
 
 A broker agnostic implementation of outbox and other message resilience patterns for django apps. 
 
-![Jaiminho](https://github.com/loadsmart/jaiminho/blob/master/docs/images/jaiminho.jpg?raw=true)
+![Jaiminho](https://github.com/loadsmart/django-jaiminho/blob/master/assets/jaiminho.jpg?raw=true)
 
 ## Installation
 
