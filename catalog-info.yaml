@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: jaiminho
-  description: Python library generated using cookiecutter template
+  description: A broker agnostic implementation of outbox and other message resilience patterns for Django apps.
   annotations:
     github.com/project-slug: loadsmart/django-jaiminho
     circleci.com/project-slug: github/loadsmart/django-jaiminho
