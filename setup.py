@@ -21,7 +21,7 @@ version = os.getenv("CIRCLE_TAG", os.getenv("CIRCLE_SHA1")) or "0.0.0"
 
 
 setup(
-    name="jaiminho",
+    name="django-jaiminho",
     version=version,
     description="Python library generated using cookiecutter template",
     long_description=long_description,
