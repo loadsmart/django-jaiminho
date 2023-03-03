@@ -8,7 +8,7 @@ commands:
     steps:
       - run:
           command: |
-            sudo pip install tox coveralls[yaml]
+            pip install tox coveralls[yaml]
   upload-coverage:
     parameters:
       pyversion:
