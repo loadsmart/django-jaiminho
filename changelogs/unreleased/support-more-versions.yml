@@ -1,0 +1,4 @@
+---
+description: 'feat: Add support for Python 3.10 and 3.11'
+type: added
+pr_number: 65

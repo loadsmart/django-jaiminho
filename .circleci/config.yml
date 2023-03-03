@@ -59,6 +59,32 @@ jobs:
           pyversion: py39
       - store_test_results:
           path: build
+  tests310:
+    working_directory: /home/circleci/project
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py310
+      - upload-coverage:
+          pyversion: py310
+      - store_test_results:
+          path: build
+  tests311:
+    working_directory: /home/circleci/project
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py311
+      - upload-coverage:
+          pyversion: py311
+      - store_test_results:
+          path: build
   release:
     working_directory: /home/circleci/project
     docker:
@@ -87,6 +113,16 @@ workflows:
             tags:
               only: /^\d+\.\d+\.\d+$/
       - tests39:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - tests310:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - tests311:
           context: org-global
           filters:
             tags:
