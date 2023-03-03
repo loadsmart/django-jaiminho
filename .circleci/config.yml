@@ -23,7 +23,7 @@ jobs:
   tests37:
     working_directory: /home/circleci/project
     docker:
-      - image: circleci/python:3.7-stretch
+      - image: cimg/python:3.7
     steps:
       - checkout
       - install-dependencies
@@ -36,7 +36,7 @@ jobs:
   tests38:
     working_directory: /home/circleci/project
     docker:
-      - image: circleci/python:3.8.1-buster
+      - image: cimg/python:3.8
     steps:
       - checkout
       - install-dependencies
@@ -49,7 +49,7 @@ jobs:
   tests39:
     working_directory: /home/circleci/project
     docker:
-      - image: circleci/python:3.9.4-buster
+      - image: cimg/python:3.9
     steps:
       - checkout
       - install-dependencies
@@ -62,7 +62,7 @@ jobs:
   release:
     working_directory: /home/circleci/project
     docker:
-      - image: circleci/python:3.7-stretch
+      - image: cimg/python:3.7
     steps:
       - checkout
       - run:
