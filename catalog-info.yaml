@@ -6,6 +6,7 @@ metadata:
   annotations:
     github.com/project-slug: loadsmart/django-jaiminho
     circleci.com/project-slug: github/loadsmart/django-jaiminho
+    opslevel.com/tier: tier_4
   tags:
     - python
 spec:
