@@ -50,7 +50,7 @@ python manage.py events_relay --run-in-loop --loop-interval 1
 
 ```
 
-If don't use --run-in-loop, the relay command will run only 1 time. This is useful in case you want to configure it as a cronjob.
+If you don't use --run-in-loop option, the relay command will run only 1 time. This is useful in case you want to configure it as a cronjob.
 
 
 ## Details
@@ -72,43 +72,14 @@ Be carefully with this approach, **if any execution fails, the relayer will get 
 
 #### Publish on commit
 
-This strategy will always execute the decorated function after current transaction commit. With this approach, we don't depend on a relayer (separate process / cronjob) to execute the decorated function and deliver the message. Failed items will only be executed
-through relayer. Although we can decrease the delay to execute the decorated function with this approach, **we cannot guarantee delivery order**.
+This strategy will always execute the decorated function after current transaction commit. With this approach, we don't depend on a relayer (separate process / cronjob) to execute the decorated function and deliver the message. Failed items will only be retried
+through relayer. Although this solution has a better performance as only failed items is delivered by the relay command, **we cannot guarantee delivery order**.
 
 
 ### Relay Command
 We already provide a command to relay items from DB, [EventRelayCommand](https://github.com/loadsmart/django-jaiminho/blob/master/jaiminho/management/commands/events_relay.py). The way you should configure depends on the strategy you choose. 
 For example, on **Publish on Commit Strategy** you can configure a cronjob to run every a couple of minutes since only failed items are published by the command relay. If you are using **Keep Order Strategy**, you should run relay command in loop mode as all items will be published by the command, e.g `call_command(events_relay.Command(), run_in_loop=True, loop_interval=0.1)`.  
 
-
-
-### Signals
-
-Jaiminho triggers the following Django signals:
-
-| Signal                  | Description                                                                     |
-|-------------------------|---------------------------------------------------------------------------------|
-| event_published         | Triggered when an event is sent successfully                                    |
-| event_failed_to_publish | Triggered when an event is not sent, being added to the Outbox table queue      |
-
-
-### How to collect metrics from Jaiminho?
-
-You could use the Django signals triggered by Jaiminho to collect metrics. 
-Consider the following code as example:
-
-````python
-from django.dispatch import receiver
-
-@receiver(event_published)
-def on_event_sent(sender, event_payload, **kwargs):
-    metrics.count(f"event_sent_successfully {event_payload.get('type')}")
-
-@receiver(event_failed_to_publish)
-def on_event_send_error(sender, event_payload, **kwargs):
-    metrics.count(f"event_failed {event_payload.get('type')}")
-
-````
 
 ### How to clean older events
 
@@ -143,6 +114,33 @@ python manage.py relay_event True 0.1 my-stream
 
 In the example above, `True` is the option for run_in_loop; `0.1` for loop_interval; and `my_stream` is the name of the stream.
 
+### Signals
+
+Jaiminho triggers the following Django signals:
+
+| Signal                  | Description                                                                     |
+|-------------------------|---------------------------------------------------------------------------------|
+| event_published         | Triggered when an event is sent successfully                                    |
+| event_failed_to_publish | Triggered when an event is not sent, being added to the Outbox table queue      |
+
+
+### How to collect metrics from Jaiminho?
+
+You could use the Django signals triggered by Jaiminho to collect metrics. 
+Consider the following code as example:
+
+````python
+from django.dispatch import receiver
+
+@receiver(event_published)
+def on_event_sent(sender, event_payload, **kwargs):
+    metrics.count(f"event_sent_successfully {event_payload.get('type')}")
+
+@receiver(event_failed_to_publish)
+def on_event_send_error(sender, event_payload, **kwargs):
+    metrics.count(f"event_failed {event_payload.get('type')}")
+
+````
 
 ## Development
 
