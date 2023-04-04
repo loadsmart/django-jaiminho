@@ -15,11 +15,11 @@ python -m pip install jaiminho
 
 Add `jaiminho` to the `INSTALLED_APPS` section of your Django app
 
-## Usage
+## Getting Started
 
-Jaiminho provides a `@save_to_outbox` decorator that you can use in your functions responsible for communicating with external systems such as brokers, external APIs, etc.
-Behind the scenes, jaiminho stores those function calls into a local table of the same database within the current transaction. It relays those calls after a successful commit - or by directly calling its `relay` command - fixing the dual writes issue.
+To integrate jaiminho with your project, you just need to do 3 steps:
 
+### 1 - Decorate your functions with save_to_outbox_decorator
 ```python
 from jaiminho.send import save_to_outbox
 
@@ -29,7 +29,7 @@ def any_external_call(**kwargs):
     return
 ```
 
-Configure jaiminho options in Django settings.py:
+### 2 - Configure jaiminho options in Django settings.py:
 ```python
 
 # JAIMINHO
@@ -42,6 +42,20 @@ JAIMINHO_CONFIG = {
 }
 
 ```
+
+### 3 - Run the relay events command
+
+```
+python manage.py events_relay --run-in-loop --loop-interval 1
+
+```
+
+If don't use --run-in-loop, the relay command will run only 1 time. This is useful in case you want to configure it as a cronjob.
+
+
+## Details
+
+Jaiminho @save_on_commit decorator will intercept decorated function and persist it in a database table in the same transaction that is active in the decorated function context. The event relay command, is a separated process that fetches the rows from this table and execute the functions. When an outage happens, the event relay command will keep retrying until it succeeds. This way, eventual consistency is ensured by design.
 
 ### Configuration options
 
