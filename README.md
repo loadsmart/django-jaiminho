@@ -52,12 +52,12 @@ python manage.py events_relay --run-in-loop --loop-interval 1
 
 ```
 
-If you don't use --run-in-loop option, the relay command will run only 1 time. This is useful in case you want to configure it as a cronjob.
+If you don't use `--run-in-loop` option, the relay command will run only 1 time. This is useful in case you want to configure it as a cronjob.
 
 
 ## Details
 
-Jaiminho @save_on_commit decorator will intercept decorated function and persist it in a database table in the same transaction that is active in the decorated function context. The event relay command, is a separated process that fetches the rows from this table and execute the functions. When an outage happens, the event relay command will keep retrying until it succeeds. This way, eventual consistency is ensured by design.
+Jaiminho `@save_to_outbox` decorator will **intercept** decorated function and **persist** it in a **database table** in the same **transaction** that is active in the decorated function context. The event relay **command**, is a **separated process** that fetches the rows from this table and execute the functions. When an outage happens, the event relay command will **keep retrying until it succeeds**. This way, **eventual consistency is ensured** by design.
 
 ### Configuration options
 
