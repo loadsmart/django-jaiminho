@@ -6,7 +6,9 @@ A broker agnostic implementation of the outbox and other message resilience patt
 
 ![Jaiminho](https://github.com/loadsmart/django-jaiminho/blob/master/assets/jaiminho.jpg?raw=true)
 
-## Installation
+## Getting Started
+
+### Installation
 
 
 ```sh
@@ -15,7 +17,7 @@ python -m pip install jaiminho
 
 Add `jaiminho` to the `INSTALLED_APPS` section of your Django app
 
-## Getting Started
+### Integration
 
 To integrate jaiminho with your project, you just need to do 3 steps:
 
