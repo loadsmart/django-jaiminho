@@ -1,7 +1,7 @@
 # Development requirements for Python 3.X
 # For package requirements, please see setup.py
 
-pytest==6.2.4
+pytest==7.3.0
 pytest-cov==4.0.0
 pytest-django==4.5.2
 pytest-mock~=3.10.0
