@@ -37,9 +37,6 @@ def any_external_call(**kwargs):
 
 ### 4 - Configure jaiminho options in Django settings.py:
 ```python
-
-# JAIMINHO
-
 JAIMINHO_CONFIG = {
     "PERSIST_ALL_EVENTS": False,
     "DELETE_AFTER_SEND": True,
