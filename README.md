@@ -10,7 +10,7 @@ A broker agnostic implementation of the outbox and other message resilience patt
 
 To use jaiminho with your project, you just need to do 5 steps:
 
-### 1 - Installation
+### 1 - Install it
 
 ```sh
 python -m pip install jaiminho
