@@ -8,20 +8,24 @@ A broker agnostic implementation of the outbox and other message resilience patt
 
 ## Getting Started
 
-### Installation
+To use jaiminho with your project, you just need to do 5 steps:
 
+### 1 - Installation
 
 ```sh
 python -m pip install jaiminho
 ```
 
-Add `jaiminho` to the `INSTALLED_APPS` section of your Django app
+### 2 - Add jaiminho to the INSTALLED_APPS 
 
-### Integration
+```python
+INSTALLED_APPS = [
+    ...
+    "jaiminho"
+]
+```
 
-To integrate jaiminho with your project, you just need to do 3 steps:
-
-### 1 - Decorate your functions with save_to_outbox_decorator
+### 3 - Decorate your functions with @save_to_outbox
 ```python
 from jaiminho.send import save_to_outbox
 
@@ -31,7 +35,7 @@ def any_external_call(**kwargs):
     return
 ```
 
-### 2 - Configure jaiminho options in Django settings.py:
+### 4 - Configure jaiminho options in Django settings.py:
 ```python
 
 # JAIMINHO
@@ -45,7 +49,7 @@ JAIMINHO_CONFIG = {
 
 ```
 
-### 3 - Run the relay events command
+### 5 - Run the relay events command
 
 ```
 python manage.py events_relay --run-in-loop --loop-interval 1
