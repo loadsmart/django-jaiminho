@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 def chunked_iterator(queryset, chunk_size=500):
     paginator = Paginator(queryset, chunk_size)
     for page in range(1, paginator.num_pages + 1):
-        yield paginator.page(page)
+        for item in paginator.page(page).object_list:
+            yield item
 
 
 class Command(BaseCommand):
@@ -33,8 +34,8 @@ class Command(BaseCommand):
             "JAIMINHO-EVENT-CLEANER: Start cleaning up events .."
         )
 
-        for events in chunked_iterator(events_to_delete):
-            events.delete()
+        for event in chunked_iterator(events_to_delete):
+            event.delete()
 
         logger.info(
             "JAIMINHO-EVENT-CLEANER: Successfully deleted %s events",
