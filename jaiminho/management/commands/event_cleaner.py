@@ -3,11 +3,18 @@ import logging
 from datetime import timedelta
 from django.core.management import BaseCommand
 from django.utils import timezone
+from django.core.paginator import Paginator
 
 from jaiminho import settings
 from jaiminho.models import Event
 
 logger = logging.getLogger(__name__)
+
+
+def chunked_iterator(queryset, chunk_size=500):
+    paginator = Paginator(queryset, chunk_size)
+    for page in range(1, paginator.num_pages + 1):
+        yield paginator.page(page)
 
 
 class Command(BaseCommand):
@@ -22,13 +29,12 @@ class Command(BaseCommand):
             sent_at__lt=deletion_threshold_timestamp
         )
 
-        if events_to_delete.count() == 0:
-            logger.info(
-                "JAIMINHO-EVENT-CLEANER: Did not found events to be deleted. Finishing execution..."
-            )
-            return
+        logger.info(
+            "JAIMINHO-EVENT-CLEANER: Start cleaning up events .."
+        )
 
-        events_to_delete.delete()
+        for events in chunked_iterator(events_to_delete):
+            events.delete()
 
         logger.info(
             "JAIMINHO-EVENT-CLEANER: Successfully deleted %s events",
