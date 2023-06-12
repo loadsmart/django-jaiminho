@@ -7,6 +7,7 @@ MAX_BYTES = 65535
 
 
 class Event(models.Model):
+    id = models.BigAutoField(primary_key=True)
     message = models.BinaryField(null=True, max_length=MAX_BYTES)
     function = models.BinaryField(null=True, max_length=MAX_BYTES)
     kwargs = models.BinaryField(null=True, max_length=MAX_BYTES)
