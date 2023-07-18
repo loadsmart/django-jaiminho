@@ -2,12 +2,12 @@
 # For package requirements, please see setup.py
 
 pytest==7.4.0
-pytest-cov==4.0.0
+pytest-cov==4.1.0
 pytest-django==4.5.2
-pytest-mock~=3.10.0
+pytest-mock~=3.11.1
 tox==4.5.1
 wheel==0.40.0
 factory-boy~=3.2.1
 freezegun~=1.2.2
 ipdb
-setuptools==67.7.2
+setuptools==68.0.0
