@@ -1,0 +1,7 @@
+---
+description: Updating developer dependencies
+type: changed
+---
+description: Update event_cleaner to consume less memory
+type: changed
+pr_number: 99
