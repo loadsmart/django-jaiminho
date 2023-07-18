@@ -1,12 +1,13 @@
-import pytest
-
 from datetime import timedelta
+
+import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
-from jaiminho_django_test_project.management.commands import validate_event_cleaner
+from jaiminho_django_test_project.management.commands import \
+    validate_event_cleaner
 
 pytestmark = pytest.mark.django_db
 
@@ -81,7 +82,5 @@ class TestEventCleanerCommand:
         call_command(validate_event_cleaner.Command())
 
         remaining_events = Event.objects.all()
-        assert set(remaining_events) == set(
-            [*older_events, *newer_events, *not_sent_events]
-        )
+        assert set(remaining_events) == {*older_events, *newer_events, *not_sent_events}
         assert len(Event.objects.all()) == 6
