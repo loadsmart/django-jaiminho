@@ -5,7 +5,7 @@ pytest==7.4.0
 pytest-cov==4.1.0
 pytest-django==4.5.2
 pytest-mock~=3.11.1
-tox==4.6.4
+tox==4.11.3
 wheel==0.40.0
 factory-boy~=3.2.1
 freezegun~=1.2.2
