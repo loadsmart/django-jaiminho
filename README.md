@@ -1,7 +1,6 @@
 # jaiminho
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/loadsmart/django-jaiminho/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/loadsmart/django-jaiminho/tree/master)
-[![Coverage Status](https://coveralls.io/repos/github/loadsmart/django-jaiminho/badge.svg?branch=master)](https://coveralls.io/github/loadsmart/django-jaiminho?branch=master)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
 A broker agnostic implementation of the outbox and other message resilience patterns for Django apps. 

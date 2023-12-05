@@ -41,7 +41,7 @@ setup(
     ],
     packages=find_packages(exclude=["docs", "tests", "jaiminho_django_test_project"]),
     python_requires=">=3.7, <4",
-    install_requires=["Django", "sentry_sdk", "dill==0.3.6"],
+    install_requires=["Django", "sentry_sdk", "dill==0.3.7"],
     project_urls={
         "Documentation": "https://github.com/loadsmart/django-jaiminho/blob/master/README.md",
         "Source": "https://github.com/loadsmart/django-jaiminho",
