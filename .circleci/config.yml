@@ -8,16 +8,7 @@ commands:
     steps:
       - run:
           command: |
-            pip install tox coveralls[yaml]
-  upload-coverage:
-    parameters:
-      pyversion:
-        type: string
-        description: Python version
-    steps:
-      - run:
-          command: |
-            coveralls
+            pip install tox
 
 jobs:
   tests37:
@@ -29,8 +20,6 @@ jobs:
       - install-dependencies
       - run:
           command: tox -e py37
-      - upload-coverage:
-          pyversion: py37
       - store_test_results:
           path: build
   tests38:
@@ -42,8 +31,6 @@ jobs:
       - install-dependencies
       - run:
           command: tox -e py38
-      - upload-coverage:
-          pyversion: py38
       - store_test_results:
           path: build
   tests39:
@@ -55,8 +42,6 @@ jobs:
       - install-dependencies
       - run:
           command: tox -e py39
-      - upload-coverage:
-          pyversion: py39
       - store_test_results:
           path: build
   tests310:
@@ -68,8 +53,6 @@ jobs:
       - install-dependencies
       - run:
           command: tox -e py310
-      - upload-coverage:
-          pyversion: py310
       - store_test_results:
           path: build
   tests311:
@@ -81,8 +64,6 @@ jobs:
       - install-dependencies
       - run:
           command: tox -e py311
-      - upload-coverage:
-          pyversion: py311
       - store_test_results:
           path: build
   release:
