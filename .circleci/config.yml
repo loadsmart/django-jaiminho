@@ -11,17 +11,6 @@ commands:
             pip install tox
 
 jobs:
-  tests37:
-    working_directory: /home/circleci/project
-    docker:
-      - image: cimg/python:3.7
-    steps:
-      - checkout
-      - install-dependencies
-      - run:
-          command: tox -e py37
-      - store_test_results:
-          path: build
   tests38:
     working_directory: /home/circleci/project
     docker:
@@ -66,10 +55,21 @@ jobs:
           command: tox -e py311
       - store_test_results:
           path: build
+  tests312:
+    working_directory: /home/circleci/project
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py312
+      - store_test_results:
+          path: build
   release:
     working_directory: /home/circleci/project
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     steps:
       - checkout
       - run:
@@ -83,11 +83,6 @@ workflows:
   version: 2
   main:
     jobs:
-      - tests37:
-          context: org-global
-          filters:
-            tags:
-              only: /^\d+\.\d+\.\d+$/
       - tests38:
           context: org-global
           filters:
@@ -108,13 +103,20 @@ workflows:
           filters:
             tags:
               only: /^\d+\.\d+\.\d+$/
+      - tests312:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - release:
           name: release
           context: org-global
           requires:
-            - tests37
             - tests38
             - tests39
+            - tests310
+            - tests311
+            - tests312
           filters:
             branches:
               ignore: /.*/
