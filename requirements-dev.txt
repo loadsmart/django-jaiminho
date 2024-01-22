@@ -10,4 +10,4 @@ wheel==0.42.0
 factory-boy~=3.3.0
 freezegun~=1.4.0
 ipdb
-setuptools==69.0.2
+setuptools==69.0.3
