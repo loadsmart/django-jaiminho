@@ -12,4 +12,4 @@ metadata:
 spec:
   type: library
   lifecycle: production
-  owner: wg-outbox
+  owner: backend
