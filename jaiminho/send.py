@@ -1,16 +1,16 @@
 import logging
 from functools import wraps
 
-from jaiminho.publish_strategies import create_publish_strategy
-from jaiminho import settings
-
-
 logger = logging.getLogger(__name__)
 
 
 def save_to_outbox(func):
     @wraps(func)
     def inner(*args, **kwargs):
+        # Load Django dependencies lazily to ensure the Django environment is ready
+        from jaiminho.publish_strategies import create_publish_strategy
+        from jaiminho import settings
+
         publish_strategy = create_publish_strategy(settings.publish_strategy)
         publish_strategy.publish(args, kwargs, func)
 
@@ -22,6 +22,10 @@ def save_to_outbox_stream(stream, overwrite_strategy_with=None):
     def decorator(func):
         @wraps(func)
         def inner(*args, **kwargs):
+            # Load Django dependencies lazily to ensure the Django environment is ready
+            from jaiminho.publish_strategies import create_publish_strategy
+            from jaiminho import settings
+
             _publish_strategy = (
                 overwrite_strategy_with
                 if overwrite_strategy_with

@@ -27,17 +27,17 @@ def mock_internal_notify(mocker):
 
 @pytest.fixture
 def mock_should_delete_after_send(mocker):
-    return mocker.patch("jaiminho.send.settings.delete_after_send", True)
+    return mocker.patch("jaiminho.settings.delete_after_send", True)
 
 
 @pytest.fixture
 def mock_should_not_delete_after_send(mocker):
-    return mocker.patch("jaiminho.send.settings.delete_after_send", False)
+    return mocker.patch("jaiminho.settings.delete_after_send", False)
 
 
 @pytest.fixture
 def mock_should_persist_all_events(mocker):
-    return mocker.patch("jaiminho.send.settings.persist_all_events", True)
+    return mocker.patch("jaiminho.settings.persist_all_events", True)
 
 
 @pytest.fixture
@@ -132,8 +132,8 @@ class TestNotify:
         mocker,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
 
         payload = {"action": "a", "type": "t", "c": "d"}
         with TestCase.captureOnCommitCallbacks(execute=True):
@@ -154,7 +154,7 @@ class TestNotify:
         caplog,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -176,7 +176,7 @@ class TestNotify:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify(*args)
@@ -198,7 +198,7 @@ class TestNotify:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -228,7 +228,7 @@ class TestNotify:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         payload = {"action": "a", "type": "t", "c": "d"}
 
@@ -259,9 +259,9 @@ class TestNotify:
         mocker,
         caplog,
     ):
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -292,7 +292,7 @@ class TestNotify:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         mock_internal_notify_fail.side_effect = exception
 
@@ -323,9 +323,9 @@ class TestNotify:
         persist_all_events,
         publish_strategy,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
 
@@ -360,9 +360,9 @@ class TestNotify:
         persist_all_events,
         publish_strategy,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -396,9 +396,9 @@ class TestNotify:
         persist_all_events,
         publish_strategy,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.delete_after_send", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.delete_after_send", persist_all_events)
         args = ({"action": "a", "type": "t", "c": "d"},)
         param = {"param": 1}
         jaiminho_django_test_project.send.notify(*args, encoder=encoder, param=param)
@@ -483,8 +483,8 @@ class TestNotifyWithStream:
         mocker,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
 
         payload = {"action": "a", "type": "t", "c": "d"}
         with TestCase.captureOnCommitCallbacks(execute=True):
@@ -505,7 +505,7 @@ class TestNotifyWithStream:
         caplog,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -527,7 +527,7 @@ class TestNotifyWithStream:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify_to_stream(*args)
@@ -549,7 +549,7 @@ class TestNotifyWithStream:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -579,7 +579,7 @@ class TestNotifyWithStream:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         payload = {"action": "a", "type": "t", "c": "d"}
 
@@ -613,9 +613,9 @@ class TestNotifyWithStream:
         mocker,
         caplog,
     ):
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         args = ({"action": "a", "type": "t", "c": "d"},)
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
@@ -649,7 +649,7 @@ class TestNotifyWithStream:
         publish_strategy,
         mocker,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
         mock_internal_notify_fail.side_effect = exception
 
@@ -680,9 +680,9 @@ class TestNotifyWithStream:
         persist_all_events,
         publish_strategy,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
 
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify_to_stream(
@@ -707,9 +707,9 @@ class TestNotifyWithStream:
         persist_all_events,
         publish_strategy,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.persist_all_events", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.persist_all_events", persist_all_events)
 
         with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
             jaiminho_django_test_project.send.notify_to_stream(
@@ -735,9 +735,9 @@ class TestNotifyWithStream:
         persist_all_events,
         publish_strategy,
     ):
-        mocker.patch("jaiminho.send.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.delete_after_send", delete_after_send)
-        mocker.patch("jaiminho.send.settings.delete_after_send", persist_all_events)
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mocker.patch("jaiminho.settings.delete_after_send", delete_after_send)
+        mocker.patch("jaiminho.settings.delete_after_send", persist_all_events)
         args = ({"action": "a", "type": "t", "c": "d"},)
         param = {"param": 1}
         jaiminho_django_test_project.send.notify_to_stream(
@@ -771,7 +771,7 @@ class TestNofityWithStreamOverwritingStrategy:
             "jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT
         )
         create_publish_strategy_mock = mocker.patch(
-            "jaiminho.send.create_publish_strategy",
+            "jaiminho.publish_strategies.create_publish_strategy",
             autospec=True,
             return_value=strategy,
         )
@@ -806,7 +806,7 @@ class TestNofityWithStreamOverwritingStrategy:
             "jaiminho.settings.publish_strategy", PublishStrategyType.PUBLISH_ON_COMMIT
         )
         create_publish_strategy_mock = mocker.patch(
-            "jaiminho.send.create_publish_strategy",
+            "jaiminho.publish_strategies.create_publish_strategy",
             autospec=True,
             return_value=strategy,
         )

@@ -83,11 +83,11 @@ class TestValidateEventsRelay:
 
     @pytest.fixture
     def mock_should_delete_after_send(self, mocker):
-        return mocker.patch("jaiminho.send.settings.delete_after_send", True)
+        return mocker.patch("jaiminho.settings.delete_after_send", True)
 
     @pytest.fixture
     def mock_should_not_delete_after_send(self, mocker):
-        return mocker.patch("jaiminho.send.settings.delete_after_send", False)
+        return mocker.patch("jaiminho.settings.delete_after_send", False)
 
     @pytest.mark.parametrize(
         "publish_strategy",
@@ -712,7 +712,7 @@ class TestValidateEventsRelay:
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
         mocker.patch(
-            "jaiminho.send.settings.default_capture_exception",
+            "jaiminho.settings.default_capture_exception",
             mock_capture_exception_fn,
         )
         assert Event.objects.all().count() == 1
@@ -732,7 +732,7 @@ class TestValidateEventsRelay:
         missing_module = b'\x80\x04\x95.\x00\x00\x00\x00\x00\x00\x00\x8c"jaiminho_django_test_project.send2\x94\x8c\x03foo\x94\x93\x94.'
 
         mocker.patch(
-            "jaiminho.send.settings.default_capture_exception",
+            "jaiminho.settings.default_capture_exception",
             mock_capture_exception_fn,
         )
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
@@ -779,7 +779,7 @@ class TestValidateEventsRelay:
         publish_strategy,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
-        mocker.patch("jaiminho.send.settings.default_capture_exception", None)
+        mocker.patch("jaiminho.settings.default_capture_exception", None)
 
         call_command(validate_events_relay.Command())
 
@@ -794,7 +794,7 @@ class TestValidateEventsRelay:
     ):
         mock_custom_capture_fn = mock.Mock()
         mocker.patch(
-            "jaiminho.send.settings.default_capture_exception", mock_custom_capture_fn
+            "jaiminho.settings.default_capture_exception", mock_custom_capture_fn
         )
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
