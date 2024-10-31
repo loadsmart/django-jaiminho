@@ -8,6 +8,8 @@ the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## [Unreleased]
 
+## [1.3.0] - 2024-10-31
+
 ## [1.2.0] - 2023-07-18
 ### Changed
 - Updating developer dependencies
@@ -27,7 +29,8 @@ the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## 0.0.0 - 2023-03-01
 
-[Unreleased]: https://github.com/loadsmart/django-jaiminho/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/loadsmart/django-jaiminho/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/loadsmart/django-jaiminho/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/loadsmart/django-jaiminho/compare/1.1.1...1.2.0
 [1.1.1]: https://github.com/loadsmart/django-jaiminho/compare/1.1.0...1.1.1
 [1.1.0]: https://github.com/loadsmart/django-jaiminho/compare/1.0.0...1.1.0
