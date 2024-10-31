@@ -6,8 +6,7 @@ from django.utils import timezone
 
 from jaiminho.models import Event
 from jaiminho.tests.factories import EventFactory
-from jaiminho_django_test_project.management.commands import \
-    validate_event_cleaner
+from jaiminho_django_test_project.management.commands import validate_event_cleaner
 
 pytestmark = pytest.mark.django_db
 
@@ -40,7 +39,7 @@ class TestEventCleanerCommand:
     def test_command_with_misconfigured_time_to_delete_raises_error_and_doesnt_delete(
         self, mocker, older_events, newer_events, not_sent_events
     ):
-        mocker.patch("jaiminho.send.settings.time_to_delete", "not-a-timedelta")
+        mocker.patch("jaiminho.settings.time_to_delete", "not-a-timedelta")
 
         assert len(Event.objects.all()) == 6
 
@@ -52,7 +51,7 @@ class TestEventCleanerCommand:
     def test_command_deletes_older_events(
         self, mocker, older_events, newer_events, not_sent_events, caplog
     ):
-        mocker.patch("jaiminho.send.settings.time_to_delete", self.TIME_TO_DELETE)
+        mocker.patch("jaiminho.settings.time_to_delete", self.TIME_TO_DELETE)
 
         assert len(Event.objects.all()) == 6
         call_command(validate_event_cleaner.Command())
@@ -65,7 +64,7 @@ class TestEventCleanerCommand:
     def test_command_doesnt_delete_when_there_are_no_older_events(
         self, mocker, newer_events, not_sent_events, caplog
     ):
-        mocker.patch("jaiminho.send.settings.time_to_delete", self.TIME_TO_DELETE)
+        mocker.patch("jaiminho.settings.time_to_delete", self.TIME_TO_DELETE)
 
         assert len(Event.objects.all()) == 4
         call_command(validate_event_cleaner.Command())
