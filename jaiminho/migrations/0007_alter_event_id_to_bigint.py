@@ -11,17 +11,15 @@ class Migration(migrations.Migration):
 
     operations = []
 
-    if connection.vendor == 'postgresql':
+    if connection.vendor == "postgresql":
         operations.append(
             migrations.RunSQL(
-                "ALTER TABLE jaiminho_event ALTER COLUMN id TYPE BIGINT",
+                "ALTER TABLE jaiminho_event ALTER COLUMN id TYPE BIGINT;",
             )
         )
-    elif connection.vendor == 'mysql':
+    elif connection.vendor == "mysql":
         operations.append(
             migrations.RunSQL(
-                "ALTER TABLE jaiminho_event MODIFY id BIGINT",
+                "ALTER TABLE jaiminho_event MODIFY id BIGINT;",
             )
         )
-
-
