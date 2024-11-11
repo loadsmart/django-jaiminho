@@ -97,6 +97,40 @@ You can use Jaiminho's [EventCleanerCommand](https://github.com/loadsmart/django
 
 The default time interval is `7 days`. You can use the `TIME_TO_DELETE` setting to change it. It should be added to `JAIMINHO_CONFIG` and must be a valid [timedelta](https://docs.python.org/3/library/datetime.html#timedelta-objects).
 
+### Running as cron jobs
+
+You can run those commands in a cron job. Here are some config examples:
+
+```yaml
+  - name: relay-failed-outbox-events
+    schedule: "*/15 * * * *"
+    suspend: false
+    args:
+      - ddtrace-run
+      - python
+      - manage.py
+      - events_relay
+    resources:
+      requests:
+        cpu: 1
+      limits:
+        memory: 384Mi
+
+  - name: delete-old-outbox-events
+    schedule: "0 5 * * *"
+    suspend: false
+    args:
+      - ddtrace-run
+      - python
+      - manage.py
+      - event_cleaner
+    resources:
+      requests:
+        cpu: 1
+      limits:
+        memory: 384Mi
+```
+
 ### Relay per stream and Overwrite publish strategy
 
 Different streams can have different requirements. You can save separate events per streams by using the `@save_to_outbox_stream` decorator:
