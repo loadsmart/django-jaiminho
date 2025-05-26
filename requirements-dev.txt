@@ -8,6 +8,6 @@ pytest-mock~=3.14.0
 tox==4.25.0
 wheel==0.45.1
 factory-boy~=3.3.3
-freezegun~=1.5.1
+freezegun~=1.5.2
 ipdb
 setuptools==75.3.0
