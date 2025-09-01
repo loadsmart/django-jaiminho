@@ -186,6 +186,36 @@ def on_event_send_error(sender, event_payload, **kwargs):
 
 ````
 
+### Jaiminho with Celery
+
+Jaiminho can be very useful for adding reliability to Celery workflows. Writing to the database and enqueuing Celery tasks in the same workflow is very common in many applications, and this pattern can benefit greatly from the outbox pattern to ensure message delivery reliability.
+
+Instead of configuring the `@save_to_outbox` decorator for every individual Celery task, you can integrate it at the Celery class level by overriding the `send_task` method, which is used by Celery to enqueue new tasks. This way, all tasks automatically benefit from the outbox pattern without requiring individual configuration.
+
+Here's how to implement this:
+
+```python
+from celery import Celery
+from jaiminho import save_to_outbox
+
+
+class CeleryWithJaiminho(Celery):
+    """
+    Custom Celery class that inherits from Celery base class
+    and adds Jaiminho functionality
+    """
+    
+    @save_to_outbox
+    def send_task(self, *args, **kwargs):
+        """Send task with outbox pattern for reliability"""
+        return super().send_task(*args, **kwargs)
+
+
+app = CeleryWithJaiminho("tasks")
+```
+
+With this approach, all tasks sent through your Celery app will automatically use the outbox pattern, ensuring that task enqueuing is resilient to transient failures and network issues.
+
 ## Development
 
 Create a virtualenv
