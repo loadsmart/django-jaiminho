@@ -4,7 +4,6 @@ from time import sleep
 from django.core.management import BaseCommand
 from jaiminho.relayer import EventRelayer
 
-
 log = logging.getLogger(__name__)
 
 

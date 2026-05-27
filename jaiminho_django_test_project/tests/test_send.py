@@ -6,6 +6,7 @@ from dateutil.tz import UTC
 from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 from django.test import TestCase
+from django.core.signing import BadSignature
 
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
@@ -282,7 +283,15 @@ class TestNotify:
     )
     @pytest.mark.parametrize(
         "exception",
-        (AssertionError, AttributeError, Exception, SystemError, SystemExit),
+        (
+            AssertionError,
+            ModuleNotFoundError,
+            AttributeError,
+            Exception,
+            SystemError,
+            SystemExit,
+            BadSignature,
+        ),
     )
     def test_send_fail_handles_multiple_exceptions_type(
         self,

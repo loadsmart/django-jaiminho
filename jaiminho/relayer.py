@@ -1,6 +1,7 @@
 import logging
 import dill
 
+
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.signals import (
@@ -9,7 +10,6 @@ from jaiminho.signals import (
     get_event_payload,
 )
 from jaiminho import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +38,12 @@ class EventRelayer:
             return
 
         for event in events_qs:
-            args = dill.loads(event.message)
-            kwargs = dill.loads(event.kwargs) if event.kwargs else {}
-            event_payload = get_event_payload(args)
-
             try:
+                event.verify_integrity()
+                args = dill.loads(event.message)
+                kwargs = dill.loads(event.kwargs) if event.kwargs else {}
+                event_payload = get_event_payload(args)
+
                 original_fn = _extract_original_func(event)
                 if isinstance(args, tuple):
                     original_fn(*args, **kwargs)

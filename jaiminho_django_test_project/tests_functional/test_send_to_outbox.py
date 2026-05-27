@@ -10,7 +10,6 @@ from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 import jaiminho_django_test_project.send
 
-
 EVENTS_FOLDER_PATH = "./outbox_events_confirmation"
 
 
