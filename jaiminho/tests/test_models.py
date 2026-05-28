@@ -20,44 +20,45 @@ class TestEvent:
             assert event.sent_at == datetime(2022, 1, 1, tzinfo=UTC)
 
     @pytest.mark.parametrize(
-        "field,value,expected_key",
+        "payload,expected_key",
         [
-            ("message", b"message", "ME8-7L8XjJPI7rs5w1pJtnpolu31c6vQ-EzlXwCBIdc"),
-            ("kwargs", b"kwargs", "lVLH-Uup6DUH8zILRnZ9bReV-XZpJf73pqDsacI6w40"),
-            ("function", b"function", "MdN3qNL9b2sZnruiJAvRRrtaC9ZCojJ6yP3_nx-tvdQ"),
-            ("message", None, None),
-            ("kwargs", None, None),
-            ("function", None, None),
+            ({"message": b"message"}, "ME8-7L8XjJPI7rs5w1pJtnpolu31c6vQ-EzlXwCBIdc"),
+            ({"kwargs": b"kwargs"}, "lVLH-Uup6DUH8zILRnZ9bReV-XZpJf73pqDsacI6w40"),
+            ({"function": b"function"}, "MdN3qNL9b2sZnruiJAvRRrtaC9ZCojJ6yP3_nx-tvdQ"),
+            (
+                {"message": b"message", "kwargs": b"kwargs"},
+                "nG77dEJNI5I7ScNS4caN53j9nMl46Y74gwYo2mHAk8Y",
+            ),
+            (
+                {"kwargs": b"message", "function": b"kwargs"},
+                "XskQA6Sf4K8gWh1crsLilRgpquWgzSpD1jDszuZ4C68",
+            ),
+            (
+                {"function": b"function", "message": b"message"},
+                "T7BuzgdqnGvyAx726eqob8P-skuaaqDJixfy9eZf9E0",
+            ),
+            (
+                {"message": b"message", "kwargs": b"kwargs", "function": b"function"},
+                "sJTwMGYVU-Dd5IBQcBkLzmNUQONTelR8uoO5gXqP9XM",
+            ),
         ],
     )
-    def test_generates_signing_keys_on_save(self, field, value, expected_key):
-        event = EventFactory.create()
+    def test_generates_functioning_signing_key_on_save(self, payload, expected_key):
+        initial_payload = {"message": None, "kwargs": None, "function": None}
 
-        setattr(event, field, value)
+        initial_payload.update(payload)
+
+        event = EventFactory.create(**initial_payload)
+
         event.save()
         event.refresh_from_db()
 
-        assert getattr(event, f"{field}_signing_key") == expected_key
+        try:
+            event.verify_integrity()
+        except BadSignature:
+            pytest.fail("Verify integrity should not raise BadSignature")
 
-    @pytest.mark.parametrize(
-        "field,value",
-        [
-            ("message", b"message"),
-            ("kwargs", b"kwargs"),
-            ("function", b"function"),
-            ("message", None),
-            ("kwargs", None),
-            ("function", None),
-        ],
-    )
-    def test_verify_integrity_of_untampered_event(self, field, value):
-        event = EventFactory.create()
-
-        setattr(event, field, value)
-        event.save()
-        event.refresh_from_db()
-
-        event.verify_integrity()
+        assert event.signing_key == expected_key
 
     @pytest.mark.parametrize(
         "field",
@@ -87,38 +88,24 @@ class TestEvent:
             ("function", b"function"),
         ],
     )
-    def test_verify_integrity_of_events_without_keys(self, field, value):
+    def test_verify_integrity_of_events_without_key(self, field, value):
         payload = {"message": None, "kwargs": None, "function": None}
 
         payload.update({field: value})
 
         event = EventFactory.create(**payload)
 
-        Event.objects.update(
-            message_signing_key=None, kwargs_signing_key=None, function_signing_key=None
-        )
+        Event.objects.update(signing_key=None)
         event.refresh_from_db()
 
         with pytest.raises(BadSignature):
             event.verify_integrity()
 
-    @pytest.mark.parametrize(
-        "field,value",
-        [
-            ("message", None),
-            ("kwargs", None),
-            ("function", None),
-        ],
-    )
-    def test_verify_integrity_of_events_without_keys_and_values_should_not_raise(self, field, value):
-        payload = {"message": b"message", "kwargs": b"kwargs", "function": b"function"}
-
-        payload.update({field: value})
+    def test_verify_integrity_of_events_without_key_and_values_does_not_raise(self):
+        payload = {"message": None, "kwargs": None, "function": None}
 
         event = EventFactory.create(**payload)
 
-        Event.objects.update(**{f"{field}_signing_key": None})
-        event.refresh_from_db()
         try:
             event.verify_integrity()
         except BadSignature:
