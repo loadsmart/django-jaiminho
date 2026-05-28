@@ -119,4 +119,7 @@ class TestEvent:
 
         Event.objects.update(**{f"{field}_signing_key": None})
         event.refresh_from_db()
-        event.verify_integrity()
+        try:
+            event.verify_integrity()
+        except BadSignature:
+            pytest.fail("Verify integrity should not raise BadSignature")
