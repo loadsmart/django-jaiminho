@@ -25,7 +25,7 @@ class TestEvent:
             assert event.sent_at == datetime(2022, 1, 1, tzinfo=UTC)
 
     @pytest.mark.parametrize(
-        "payload,expected_key",
+        "payload,expected_signature",
         [
             ({"message": b"message"}, "ME8-7L8XjJPI7rs5w1pJtnpolu31c6vQ-EzlXwCBIdc"),
             ({"kwargs": b"kwargs"}, "lVLH-Uup6DUH8zILRnZ9bReV-XZpJf73pqDsacI6w40"),
@@ -48,7 +48,7 @@ class TestEvent:
             ),
         ],
     )
-    def test_generates_functioning_signing_key_on_save(self, payload, expected_key):
+    def test_generates_functioning_signature_on_save(self, payload, expected_signature):
         initial_payload = {"message": None, "kwargs": None, "function": None}
 
         initial_payload.update(payload)
@@ -63,7 +63,7 @@ class TestEvent:
         except BadSignature:
             pytest.fail("Verify integrity should not raise BadSignature")
 
-        assert event.signing_key == expected_key
+        assert event.signature == expected_signature
 
     @pytest.mark.parametrize(
         "field",
@@ -92,20 +92,22 @@ class TestEvent:
             ("function", b"function"),
         ],
     )
-    def test_verify_integrity_of_events_without_key(self, field, value):
+    def test_verify_integrity_of_events_without_signature(self, field, value):
         payload = {"message": None, "kwargs": None, "function": None}
 
         payload.update({field: value})
 
         event = EventFactory.create(**payload)
 
-        Event.objects.update(signing_key=None)
+        Event.objects.update(signature=None)
         event.refresh_from_db()
 
         with pytest.raises(BadSignature):
             event.verify_integrity()
 
-    def test_verify_integrity_of_events_without_key_and_values_does_not_raise(self):
+    def test_verify_integrity_of_events_without_signature_and_values_does_not_raise(
+        self,
+    ):
         payload = {"message": None, "kwargs": None, "function": None}
 
         event = EventFactory.create(**payload)
@@ -131,4 +133,4 @@ class TestEvent:
         mocker.patch("jaiminho.settings.sign_events", False)
         event = EventFactory.create(message=b"message")
 
-        assert event.signing_key is None
+        assert event.signature is None

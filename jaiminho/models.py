@@ -15,7 +15,7 @@ class Event(models.Model):
     message = models.BinaryField(null=True, max_length=MAX_BYTES)
     function = models.BinaryField(null=True, max_length=MAX_BYTES)
     kwargs = models.BinaryField(null=True, max_length=MAX_BYTES)
-    signing_key = models.CharField(null=True, max_length=255)
+    signature = models.CharField(null=True, max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True)
     stream = models.CharField(max_length=100, null=True)
@@ -34,7 +34,7 @@ class Event(models.Model):
     def _signer():
         return Signer()
 
-    def _generate_signing_key(self, string):
+    def _generate_signature(self, string):
         signer = self._signer()
 
         if string is None:
@@ -42,7 +42,7 @@ class Event(models.Model):
 
         return signer.sign(string).split(signer.sep)[-1]
 
-    def _generate_event_signing_key(self):
+    def _generate_event_signature(self):
         if not settings.sign_events:
             return None
 
@@ -53,18 +53,18 @@ class Event(models.Model):
         ]
         blob = b"".join(payload_to_sign)
 
-        return self._generate_signing_key(blob) if blob else None
+        return self._generate_signature(blob) if blob else None
 
     def verify_integrity(self):
-        current_signing_key = self._generate_event_signing_key()
+        current_signature = self._generate_event_signature()
 
         if not settings.verify_events_signature:
             return
 
-        if current_signing_key != self.signing_key:
+        if current_signature != self.signature:
             raise BadSignature(f"{self} has been tampered")
 
     def save(self, *args, **kwargs):
-        self.signing_key = self._generate_event_signing_key()
+        self.signature = self._generate_event_signature()
 
         super().save(*args, **kwargs)
