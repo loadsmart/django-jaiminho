@@ -110,7 +110,7 @@ class TestEvent:
             ("function", None),
         ],
     )
-    def test_verify_integrity_of_events_without_keys_and_values(self, field, value):
+    def test_verify_integrity_of_events_without_keys_and_values_should_not_raise(self, field, value):
         payload = {"message": b"message", "kwargs": b"kwargs", "function": b"function"}
 
         payload.update({field: value})
