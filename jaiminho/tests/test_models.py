@@ -11,11 +11,6 @@ from jaiminho.models import Event
 
 @pytest.mark.django_db
 class TestEvent:
-    @pytest.fixture(autouse=True)
-    def mock_settings(self, mocker):
-        mocker.patch("jaiminho.settings.verify_events_signature", True)
-        mocker.patch("jaiminho.settings.sign_events", True)
-
     def test_mark_as_sent(self):
         event = EventFactory()
         assert event.sent_at is None
