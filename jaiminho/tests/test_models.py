@@ -11,6 +11,11 @@ from jaiminho.models import Event
 
 @pytest.mark.django_db
 class TestEvent:
+    @pytest.fixture(autouse=True)
+    def mock_settings(self, mocker):
+        mocker.patch("jaiminho.settings.verify_events_signature", True)
+        mocker.patch("jaiminho.settings.sign_events", True)
+
     def test_mark_as_sent(self):
         event = EventFactory()
         assert event.sent_at is None
@@ -69,7 +74,6 @@ class TestEvent:
         ],
     )
     def test_verify_integrity_of_tampered_event(self, field):
-
         event = EventFactory.create(
             message=b"message", kwargs=b"kwargs", function=b"function"
         )
@@ -110,3 +114,21 @@ class TestEvent:
             event.verify_integrity()
         except BadSignature:
             pytest.fail("Verify integrity should not raise BadSignature")
+
+    def test_verify_integrity_does_nothing_when_disabled_through_settings(self, mocker):
+        mocker.patch("jaiminho.settings.verify_events_signature", False)
+        event = EventFactory.create(message=b"message")
+
+        Event.objects.update(**{"message": b"tampered-value"})
+        event.refresh_from_db()
+
+        try:
+            event.verify_integrity()
+        except BadSignature:
+            pytest.fail("Verify integrity should not raise BadSignature")
+
+    def test_signature_is_not_generated_when_disabled_through_settings(self, mocker):
+        mocker.patch("jaiminho.settings.sign_events", False)
+        event = EventFactory.create(message=b"message")
+
+        assert event.signing_key is None

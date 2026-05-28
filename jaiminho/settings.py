@@ -16,7 +16,8 @@ delete_after_send = jaiminho_settings.get("DELETE_AFTER_SEND", False)
 publish_strategy = jaiminho_settings.get(
     "PUBLISH_STRATEGY", PublishStrategyType.PUBLISH_ON_COMMIT
 )
-
 default_capture_exception = jaiminho_settings.get(
     "DEFAULT_CAPTURE_EXCEPTION", sentry_sdk.capture_exception
 )
+sign_events = jaiminho_settings.get("SIGN_EVENTS", False)
+verify_events_signature = jaiminho_settings.get("VERIFY_EVENTS_SIGNATURE", False)

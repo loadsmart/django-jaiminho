@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.core.signing import Signer, BadSignature
 
 from jaiminho.constants import PublishStrategyType
+from jaiminho import settings
 
 MAX_BYTES = 65535
 
@@ -42,6 +43,9 @@ class Event(models.Model):
         return signer.sign(string).split(signer.sep)[-1]
 
     def _generate_event_signing_key(self):
+        if not settings.sign_events:
+            return None
+
         payload_to_sign = [
             value
             for value in [self.message, self.function, self.kwargs]
@@ -53,6 +57,9 @@ class Event(models.Model):
 
     def verify_integrity(self):
         current_signing_key = self._generate_event_signing_key()
+
+        if not settings.verify_events_signature:
+            return
 
         if current_signing_key != self.signing_key:
             raise BadSignature(f"{self} has been tampered")
