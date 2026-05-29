@@ -3,7 +3,6 @@ import json
 from jaiminho.constants import PublishStrategyType
 from jaiminho.send import save_to_outbox, save_to_outbox_stream
 
-
 EXAMPLE_STREAM = "my-stream"
 
 

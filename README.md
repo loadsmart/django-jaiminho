@@ -73,6 +73,8 @@ Jaiminho `@save_to_outbox` decorator will **intercept** decorated function and *
 - `PERSIST_ALL_EVENTS` - Saves all events and not only the ones that fail, default is `False`. Only applicable for `{ "PUBLISH_STRATEGY": "publish-on-commit" }` since all events needs to be stored on keep-order strategy. 
 - `DELETE_AFTER_SEND` - Delete the event from the outbox table immediately, after a successful send
 - `DEFAULT_ENCODER` - Default Encoder for the payload (overwritable in the function call)
+- `SIGN_EVENTS` - Signs events to support verification later
+- `VERIFY_EVENTS_SIGNATURE` - Verifies previously generated signatures
 
 ### Strategies
 

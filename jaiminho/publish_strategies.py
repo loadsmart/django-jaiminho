@@ -6,19 +6,21 @@ from django.db import transaction
 
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
-from jaiminho.relayer import EventRelayer
 from jaiminho.signals import event_published, event_failed_to_publish, get_event_payload
 from jaiminho import settings
-
 
 logger = logging.getLogger(__name__)
 
 
-def create_event_data(func_signature, args, kwargs, strategy, stream=None):
+def create_event_data(func, args, kwargs, strategy, stream=None):
+    args_dump = dill.dumps(args)
+    func_dump = dill.dumps(func)
+    kwargs_dump = dill.dumps(kwargs) if bool(kwargs) else None
+
     return {
-        "message": dill.dumps(args),
-        "function": func_signature,
-        "kwargs": dill.dumps(kwargs) if bool(kwargs) else None,
+        "message": args_dump,
+        "function": func_dump,
+        "kwargs": kwargs_dump,
         "strategy": strategy,
         "stream": stream,
     }
@@ -32,9 +34,8 @@ class BaseStrategy(ABC):
 
 class PublishOnCommitStrategy(BaseStrategy):
     def publish(self, args, kwargs, func, stream=None):
-        func_signature = dill.dumps(func)
         event_data = create_event_data(
-            func_signature,
+            func,
             args,
             kwargs,
             PublishStrategyType.PUBLISH_ON_COMMIT,
@@ -63,9 +64,8 @@ class PublishOnCommitStrategy(BaseStrategy):
 
 class KeepOrderStrategy(BaseStrategy):
     def publish(self, args, kwargs, func, stream=None):
-        func_signature = dill.dumps(func)
         event_data = create_event_data(
-            func_signature,
+            func,
             args,
             kwargs,
             PublishStrategyType.KEEP_ORDER,
