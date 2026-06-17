@@ -27,12 +27,6 @@ def _extract_original_func(event):
     return original_fn
 
 
-def warn_stuck_on_error(event):
-    logger.warning(
-        f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
-    )
-
-
 class EventRelayer:
     def relay(self, stream=None):
         events_qs = Event.objects.filter(sent_at__isnull=True)
@@ -80,7 +74,7 @@ class EventRelayer:
                 _capture_exception(exception)
 
                 if self.__stuck_on_error(event):
-                    warn_stuck_on_error(event)
+                    self.__warn_stuck_on_error(event)
                     return
 
             except (ModuleNotFoundError, AttributeError) as e:
@@ -90,7 +84,7 @@ class EventRelayer:
                 _capture_exception(e)
 
                 if self.__stuck_on_error(event):
-                    warn_stuck_on_error(event)
+                    self.__warn_stuck_on_error(event)
                     return
 
             except BaseException as e:
@@ -104,10 +98,15 @@ class EventRelayer:
                 _capture_exception(e)
 
                 if self.__stuck_on_error(event):
-                    warn_stuck_on_error(event)
+                    self.__warn_stuck_on_error(event)
                     return
 
     def __stuck_on_error(self, event):
         if not event.strategy:
             return settings.publish_strategy == PublishStrategyType.KEEP_ORDER
         return event.strategy == PublishStrategyType.KEEP_ORDER
+
+    def __warn_stuck_on_error(self, event):
+        logger.warning(
+            f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
+        )
