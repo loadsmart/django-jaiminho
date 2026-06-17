@@ -33,5 +33,5 @@ dist: clean
 	python setup.py bdist_wheel --universal
 
 release: dist
-	pip install twine
+	pip install twine==6.0.1
 	python -m twine upload --non-interactive --username __token__ --password ${PYPI_TOKEN} dist/*
