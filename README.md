@@ -9,13 +9,13 @@ A broker agnostic implementation of the outbox and other message resilience patt
 
 ## Migrating from 1.x.x
 
-`SIGN_EVENTS` and `VERIFY_EVENTS_SIGNATURE` are enabled by default once you install the latest version. However, if you're on previous version
-migrating to the latest on, you'll have to do it in two steps:
+`SIGN_EVENTS` and `VERIFY_EVENTS_SIGNATURE` are enabled by default once you install the latest version. However, if you're
+migrating from a previous version to the latest one, you'll have to do it in two steps:
 
 - Install the latest version of `django-jaiminho` and set `VERIFY_EVENTS_SIGNATURE` to `False`;
-- Check if there are any unsent events without a signature added to it and set `VERIFY_EVENTS_SIGNATURE` to `True`.
+- Ensure there are no unsent events without a signature and set `VERIFY_EVENTS_SIGNATURE` to `True`.
 
-If there are events without a signature and `VERIFY_EVENTS_SIGNATURE` is enabled, your events will be considered tampered and won't be relayed.
+If there are unset events without a signature and `VERIFY_EVENTS_SIGNATURE` is enabled, your events will be considered tampered and won't be relayed.
 
 ## Getting Started
 
