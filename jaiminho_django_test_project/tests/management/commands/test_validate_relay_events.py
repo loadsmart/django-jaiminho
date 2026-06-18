@@ -829,15 +829,13 @@ class TestValidateEventsRelay:
 
         event = EventFactory.create()
 
-        Event.objects.all().update(message=b'')
+        Event.objects.all().update(message=b"")
 
         call_command(validate_events_relay.Command())
 
         assert "Event has been tampered" in caplog.text
         capture_exception_call = mock_capture_exception_fn.call_args[0][0]
-        assert f"Event(id={event.id}) has been tampered" == str(
-            capture_exception_call
-        )
+        assert f"Event(id={event.id}) has been tampered" == str(capture_exception_call)
 
     @pytest.mark.parametrize(
         "publish_strategy",
