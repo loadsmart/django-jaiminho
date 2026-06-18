@@ -1,6 +1,8 @@
 import logging
 import dill
 
+from django.core.signing import BadSignature
+
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.signals import (
@@ -9,7 +11,6 @@ from jaiminho.signals import (
     get_event_payload,
 )
 from jaiminho import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +39,12 @@ class EventRelayer:
             return
 
         for event in events_qs:
-            args = dill.loads(event.message)
-            kwargs = dill.loads(event.kwargs) if event.kwargs else {}
-            event_payload = get_event_payload(args)
-
             try:
+                event.verify_integrity()
+                args = dill.loads(event.message)
+                kwargs = dill.loads(event.kwargs) if event.kwargs else {}
+                event_payload = get_event_payload(args)
+
                 original_fn = _extract_original_func(event)
                 if isinstance(args, tuple):
                     original_fn(*args, **kwargs)
@@ -65,6 +67,15 @@ class EventRelayer:
                 event_published_by_events_relay.send(
                     sender=original_fn, event_payload=event_payload
                 )
+            except BadSignature as exception:
+                logger.warning(
+                    f"JAIMINHO-EVENTS-RELAY: Event has been tampered, Event: {event}"
+                )
+                _capture_exception(exception)
+
+                if self.__stuck_on_error(event):
+                    self.__warn_stuck_on_error(event)
+                    return
 
             except (ModuleNotFoundError, AttributeError) as e:
                 logger.warning(
@@ -73,9 +84,7 @@ class EventRelayer:
                 _capture_exception(e)
 
                 if self.__stuck_on_error(event):
-                    logger.warning(
-                        f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
-                    )
+                    self.__warn_stuck_on_error(event)
                     return
 
             except BaseException as e:
@@ -89,12 +98,15 @@ class EventRelayer:
                 _capture_exception(e)
 
                 if self.__stuck_on_error(event):
-                    logger.warning(
-                        f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
-                    )
+                    self.__warn_stuck_on_error(event)
                     return
 
     def __stuck_on_error(self, event):
         if not event.strategy:
             return settings.publish_strategy == PublishStrategyType.KEEP_ORDER
         return event.strategy == PublishStrategyType.KEEP_ORDER
+
+    def __warn_stuck_on_error(self, event):
+        logger.warning(
+            f"JAIMINHO-EVENTS-RELAY: Events relaying are stuck due to failing Event: {event}"
+        )
