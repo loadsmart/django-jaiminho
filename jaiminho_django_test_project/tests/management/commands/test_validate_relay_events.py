@@ -18,6 +18,7 @@ from jaiminho_django_test_project.send import (
     notify,
     notify_without_decorator,
     notify_to_stream,
+    ExampleClass,
 )
 
 pytestmark = pytest.mark.django_db
@@ -694,6 +695,35 @@ class TestValidateEventsRelay:
 
         mock_internal_notify.assert_called_once()
         mock_internal_notify.assert_called_with(args[0], encoder=DjangoJSONEncoder)
+        assert Event.objects.all().count() == 1
+        event = Event.objects.all()[0]
+        assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
+
+    @pytest.mark.parametrize(
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
+    )
+    def test_relay_message_when_notify_function_is_class_method(
+        self,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        example_class_instance = ExampleClass()
+        args = (example_class_instance, {"a": 1})
+        EventFactory(
+            function=dill.dumps(example_class_instance.notify),
+            message=dill.dumps(args),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder}),
+        )
+
+        with freeze_time("2022-10-31"):
+            call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_called_once()
+        mock_internal_notify.assert_called_with(args[1], encoder=DjangoJSONEncoder)
         assert Event.objects.all().count() == 1
         event = Event.objects.all()[0]
         assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
