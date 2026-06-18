@@ -190,11 +190,11 @@ from django.dispatch import receiver
 
 @receiver(event_published)
 def on_event_sent(sender, event_payload, **kwargs):
-    metrics.count(f"event_sent_successfully {event_payload.get('type')}")
+    metrics.count(f"event_sent_successfully: {event_payload}")
 
 @receiver(event_failed_to_publish)
 def on_event_send_error(sender, event_payload, **kwargs):
-    metrics.count(f"event_failed {event_payload.get('type')}")
+    metrics.count(f"event_failed: {event_payload}")
 
 ````
 
