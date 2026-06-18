@@ -39,6 +39,8 @@ class EventRelayer:
             return
 
         for event in events_qs:
+            event_payload = {}
+
             try:
                 event.verify_integrity()
                 args = dill.loads(event.message)
