@@ -10,6 +10,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
 
 from jaiminho.constants import PublishStrategyType
+from jaiminho.signals import get_event_payload
 from jaiminho.models import Event
 from jaiminho.relayer import EventRelayer
 from jaiminho.tests.factories import EventFactory
@@ -26,7 +27,9 @@ pytestmark = pytest.mark.django_db
 class TestValidateEventsRelay:
     @pytest.fixture
     def mock_log_metric(self, mocker):
-        return mocker.patch("jaiminho_django_test_project.app.signals.log_metric")
+        return mocker.patch(
+            "jaiminho_django_test_project.app.signals.log_metric", autospec=True
+        )
 
     @pytest.fixture
     def mock_capture_exception(self, mocker):
@@ -36,25 +39,27 @@ class TestValidateEventsRelay:
 
     @pytest.fixture
     def mock_event_published_signal(self, mocker):
-        return mocker.patch("jaiminho.publish_strategies.event_published.send")
+        return mocker.patch(
+            "jaiminho.publish_strategies.event_published.send", autospec=True
+        )
 
     @pytest.fixture
     def mock_event_failed_to_publish_signal(self, mocker):
-        return mocker.patch("jaiminho.publish_strategies.event_failed_to_publish.send")
-
-    @pytest.fixture
-    def mock_event_failed_to_publish_by_events_relay_signal(self, mocker):
         return mocker.patch(
-            "jaiminho.management.commands.events_relay.event_failed_to_publish_by_events_relay.send"
+            "jaiminho.publish_strategies.event_failed_to_publish.send", autospec=True
         )
 
     @pytest.fixture
     def mock_internal_notify(self, mocker):
-        return mocker.patch("jaiminho_django_test_project.send.internal_notify")
+        return mocker.patch(
+            "jaiminho_django_test_project.send.internal_notify", autospec=True
+        )
 
     @pytest.fixture
     def mock_internal_notify_fail(self, mocker):
-        mock = mocker.patch("jaiminho_django_test_project.send.internal_notify")
+        mock = mocker.patch(
+            "jaiminho_django_test_project.send.internal_notify", autospec=True
+        )
         mock.side_effect = Exception("Some error")
         return mock
 
@@ -368,8 +373,7 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event.message)
         mock_log_metric.assert_called_once_with(
             "event-published-through-outbox",
-            expected_args[0],
-            args=expected_args,
+            get_event_payload(expected_args),
         )
 
     @pytest.mark.parametrize(
@@ -394,9 +398,7 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event_with_kwargs.message)
         mock_log_metric.assert_called_once_with(
             "event-published-through-outbox",
-            expected_args[0],
-            args=expected_args,
-            **dill.loads(failed_event_with_kwargs.kwargs),
+            get_event_payload(expected_args),
         )
 
     @pytest.mark.parametrize(
@@ -421,8 +423,7 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event.message)
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish-through-outbox",
-            expected_args[0],
-            args=expected_args,
+            get_event_payload(expected_args),
         )
 
     @pytest.mark.parametrize(
@@ -447,10 +448,45 @@ class TestValidateEventsRelay:
         expected_args = dill.loads(failed_event_with_kwargs.message)
         mock_log_metric.assert_called_once_with(
             "event-failed-to-publish-through-outbox",
-            expected_args[0],
-            args=expected_args,
-            **dill.loads(failed_event_with_kwargs.kwargs),
+            get_event_payload(expected_args),
         )
+
+    @pytest.mark.parametrize(
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
+    )
+    def test_relay_with_celery_style_payload(
+        self,
+        mock_log_metric,
+        mock_internal_notify,
+        mock_should_not_delete_after_send,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        celery_payload = {
+            "task": "my_app.tasks.foo",
+            "args": [1, 2],
+            "kwargs": {"x": 1},
+        }
+        event = EventFactory(
+            function=dill.dumps(notify),
+            message=dill.dumps((celery_payload,)),
+            kwargs=dill.dumps({"args": [1, 2], "kwargs": {"foo": "bar"}}),
+        )
+        assert Event.objects.all().count() == 1
+
+        with freeze_time("2022-10-31"):
+            call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_called_once_with(
+            celery_payload,
+            args=[1, 2],
+            kwargs={"foo": "bar"},
+        )
+        assert Event.objects.all().count() == 1
+        event.refresh_from_db()
+        assert event.sent_at == datetime(2022, 10, 31, tzinfo=UTC)
 
     @pytest.mark.parametrize(
         "publish_strategy",
