@@ -65,7 +65,7 @@ class EventRelayer:
                     )
 
                 event_published_by_events_relay.send(
-                    sender=original_fn, event_payload=event_payload, args=args, **kwargs
+                    sender=original_fn, event_payload=event_payload
                 )
             except BadSignature as exception:
                 logger.warning(
@@ -93,7 +93,7 @@ class EventRelayer:
                 )
                 original_fn = _extract_original_func(event)
                 event_failed_to_publish_by_events_relay.send(
-                    sender=original_fn, event_payload=event_payload, args=args, **kwargs
+                    sender=original_fn, event_payload=event_payload
                 )
                 _capture_exception(e)
 
