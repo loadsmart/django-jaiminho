@@ -29,9 +29,8 @@ def _extract_original_func(event):
 
 class EventRelayer:
     def relay(self, stream=None):
-        events_qs = Event.objects.filter(sent_at__isnull=True)
+        events_qs = Event.objects.select_for_update(skip_locked=True).filter(sent_at__isnull=True)
         events_qs = events_qs.filter(stream=stream)
-
         events_qs = events_qs.order_by("created_at")
 
         if not events_qs:
