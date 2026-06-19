@@ -83,6 +83,41 @@ class TestNotify:
         "publish_strategy",
         (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
     )
+    def test_send_from_class_method_successfully_persists_event(
+        self,
+        mock_internal_notify,
+        mock_log_metric,
+        mock_should_not_delete_after_send,
+        mock_should_persist_all_events,
+        publish_strategy,
+        caplog,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        example_class_instance = jaiminho_django_test_project.send.ExampleClass()
+
+        payload_1 = {"key": "value"}
+        payload_2 = "value"
+        payload_3 = {"another-key": "another-value"}
+        with TestCase.captureOnCommitCallbacks(execute=True):
+            example_class_instance.notify(*(payload_1, payload_2), **payload_3)
+
+        assert Event.objects.all().count() == 1
+
+        event = Event.objects.first()
+        kwargs = dill.loads(event.kwargs)
+        args = dill.loads(event.message)
+
+        assert kwargs == payload_3
+        assert args[0].__dict__ == example_class_instance.__dict__
+        assert args[1:] == (payload_1, payload_2)
+        assert event.stream is None
+        assert "JAIMINHO-SAVE-TO-OUTBOX: Event created" in caplog.text
+
+    @pytest.mark.parametrize(
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
+    )
     def test_send_success_should_persist_all_events(
         self,
         mock_internal_notify,

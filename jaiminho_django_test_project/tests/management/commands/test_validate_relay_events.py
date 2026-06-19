@@ -19,6 +19,7 @@ from jaiminho_django_test_project.send import (
     notify,
     notify_without_decorator,
     notify_to_stream,
+    ExampleClass,
 )
 
 pytestmark = pytest.mark.django_db
@@ -783,6 +784,29 @@ class TestValidateEventsRelay:
         assert "No module named 'jaiminho_django_test_project.send2'" == str(
             capture_exception_call
         )
+
+    @pytest.mark.parametrize(
+        "publish_strategy",
+        (PublishStrategyType.PUBLISH_ON_COMMIT, PublishStrategyType.KEEP_ORDER),
+    )
+    def test_raise_exception_when_event_was_tampered(
+        self, mocker, caplog, mock_capture_exception_fn, publish_strategy
+    ):
+        mocker.patch(
+            "jaiminho.settings.default_capture_exception",
+            mock_capture_exception_fn,
+        )
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        event = EventFactory.create()
+
+        Event.objects.all().update(message=b"")
+
+        call_command(validate_events_relay.Command())
+
+        assert "Event has been tampered" in caplog.text
+        capture_exception_call = mock_capture_exception_fn.call_args[0][0]
+        assert f"Event(id={event.id}) has been tampered" == str(capture_exception_call)
 
     @pytest.mark.parametrize(
         "publish_strategy",

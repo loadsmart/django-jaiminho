@@ -38,6 +38,8 @@ class EventRelayer:
             return
 
         for event in events_qs:
+            event_payload = {}
+
             try:
                 event.verify_integrity()
                 args = dill.loads(event.message)
@@ -62,10 +64,6 @@ class EventRelayer:
                     logger.info(
                         f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {args}"
                     )
-
-                event_published_by_events_relay.send(
-                    sender=original_fn, event_payload=event_payload
-                )
             except BadSignature as exception:
                 logger.warning(
                     f"JAIMINHO-EVENTS-RELAY: Event has been tampered, Event: {event}"
@@ -99,6 +97,10 @@ class EventRelayer:
                 if self.__stuck_on_error(event):
                     self.__warn_stuck_on_error(event)
                     return
+            else:
+                event_published_by_events_relay.send(
+                    sender=original_fn, event_payload=event_payload
+                )
 
     def __stuck_on_error(self, event):
         if not event.strategy:
