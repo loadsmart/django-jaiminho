@@ -97,8 +97,6 @@ def on_commit_hook(func, event, event_data, args, kwargs):
         logger.info(
             f"JAIMINHO-ON-COMMIT-HOOK: Event sent successfully. Payload: {args}"
         )
-
-        event_published.send(sender=func, event_payload=event_payload)
     except BaseException as exc:
         if not event:
             event = Event.objects.create(**event_data)
@@ -109,6 +107,8 @@ def on_commit_hook(func, event, event_data, args, kwargs):
         )
         event_failed_to_publish.send(sender=func, event_payload=event_payload)
         return
+    else:
+        event_published.send(sender=func, event_payload=event_payload)
 
     if event:
         if settings.delete_after_send:

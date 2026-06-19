@@ -17,6 +17,12 @@ def internal_notify(*args, decoder=None, **kwargs):
     print(args, kwargs)
 
 
+class ExampleClass:
+    @save_to_outbox
+    def notify(self, *args, **kwargs):
+        internal_notify(*args, **kwargs)
+
+
 @save_to_outbox
 def notify(*args, **kwargs):
     internal_notify(*args, **kwargs)
