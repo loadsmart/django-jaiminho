@@ -6,7 +6,7 @@ pytest-cov==5.0.0
 pytest-django==4.11.1
 pytest-mock~=3.14.1
 tox==4.25.0
-wheel==0.45.1
+wheel==0.47.0
 factory-boy~=3.3.3
 freezegun~=1.5.5
 ipdb
