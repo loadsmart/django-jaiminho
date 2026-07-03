@@ -8,7 +8,6 @@ from dateutil.tz import UTC
 from django.core.management import call_command
 from django.core.serializers.json import DjangoJSONEncoder
 from freezegun import freeze_time
-
 from jaiminho.constants import PublishStrategyType
 from jaiminho.signals import get_event_payload
 from jaiminho.models import Event
@@ -19,7 +18,6 @@ from jaiminho_django_test_project.send import (
     notify,
     notify_without_decorator,
     notify_to_stream,
-    ExampleClass,
 )
 
 pytestmark = pytest.mark.django_db
@@ -364,11 +362,14 @@ class TestValidateEventsRelay:
         mock_event_published_signal,
         publish_strategy,
         mocker,
+        django_capture_on_commit_callbacks,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
-        call_command(validate_events_relay.Command())
+        with django_capture_on_commit_callbacks(execute=True) as callbacks:
+            call_command(validate_events_relay.Command())
 
+        assert len(callbacks) == 1
         mock_internal_notify.assert_called_once()
         mock_event_published_signal.assert_not_called()
         expected_args = dill.loads(failed_event.message)
@@ -389,11 +390,14 @@ class TestValidateEventsRelay:
         mock_event_published_signal,
         publish_strategy,
         mocker,
+        django_capture_on_commit_callbacks,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
-        call_command(validate_events_relay.Command())
+        with django_capture_on_commit_callbacks(execute=True) as callbacks:
+            call_command(validate_events_relay.Command())
 
+        assert len(callbacks) == 1
         mock_internal_notify.assert_called_once()
         mock_event_published_signal.assert_not_called()
         expected_args = dill.loads(failed_event_with_kwargs.message)
@@ -414,11 +418,14 @@ class TestValidateEventsRelay:
         mock_event_failed_to_publish_signal,
         publish_strategy,
         mocker,
+        django_capture_on_commit_callbacks,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
-        call_command(validate_events_relay.Command())
+        with django_capture_on_commit_callbacks(execute=True) as callbacks:
+            call_command(validate_events_relay.Command())
 
+        assert len(callbacks) == 1
         mock_internal_notify_fail.assert_called_once()
         mock_event_failed_to_publish_signal.assert_not_called()
         expected_args = dill.loads(failed_event.message)
@@ -439,11 +446,14 @@ class TestValidateEventsRelay:
         mock_event_failed_to_publish_signal,
         publish_strategy,
         mocker,
+        django_capture_on_commit_callbacks,
     ):
         mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
 
-        call_command(validate_events_relay.Command())
+        with django_capture_on_commit_callbacks(execute=True) as callbacks:
+            call_command(validate_events_relay.Command())
 
+        assert len(callbacks) == 1
         mock_internal_notify_fail.assert_called_once()
         mock_event_failed_to_publish_signal.assert_not_called()
         expected_args = dill.loads(failed_event_with_kwargs.message)

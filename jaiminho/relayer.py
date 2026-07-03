@@ -2,6 +2,7 @@ import logging
 import dill
 
 from django.core.signing import BadSignature
+from django.db import transaction
 
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
@@ -29,6 +30,7 @@ def _extract_original_func(event):
 
 class EventRelayer:
     def relay(self, stream=None):
+        skip_locked = settings.publish_strategy == PublishStrategyType.PUBLISH_ON_COMMIT
         events_qs = Event.objects.filter(sent_at__isnull=True)
         events_qs = events_qs.filter(stream=stream)
 
@@ -39,69 +41,87 @@ class EventRelayer:
             return
 
         for event in events_qs:
+            event_id = event.id
             event_payload = {}
 
-            try:
-                event.verify_integrity()
-                args = dill.loads(event.message)
-                kwargs = dill.loads(event.kwargs) if event.kwargs else {}
-                event_payload = get_event_payload(args)
-
-                original_fn = _extract_original_func(event)
-                if isinstance(args, tuple):
-                    original_fn(*args, **kwargs)
-                else:
-                    original_fn(args, **kwargs)
-
-                logger.info(f"JAIMINHO-EVENTS-RELAY: Event sent. Event {event}")
-
-                if settings.delete_after_send:
-                    event.delete()
-                    logger.info(
-                        f"JAIMINHO-EVENTS-RELAY: Event deleted after success send. Event: {event}, Payload: {args}"
+            with transaction.atomic():
+                try:
+                    event = (
+                        Event.objects.select_for_update(skip_locked=skip_locked)
+                        .filter(sent_at__isnull=True, id=event.id)
+                        .first()
                     )
-                else:
-                    event.mark_as_sent()
-                    logger.info(
-                        f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {args}"
+
+                    if not event:
+                        logger.info(
+                            f"JAIMINHO-EVENTS-RELAY: Event {event_id} already handled by another worker, skipping."
+                        )
+                        continue
+
+                    event.verify_integrity()
+                    args = dill.loads(event.message)
+                    kwargs = dill.loads(event.kwargs) if event.kwargs else {}
+                    event_payload = get_event_payload(args)
+
+                    original_fn = _extract_original_func(event)
+                    if isinstance(args, tuple):
+                        original_fn(*args, **kwargs)
+                    else:
+                        original_fn(args, **kwargs)
+
+                    logger.info(f"JAIMINHO-EVENTS-RELAY: Event sent. Event {event}")
+
+                    if settings.delete_after_send:
+                        event.delete()
+                        logger.info(
+                            f"JAIMINHO-EVENTS-RELAY: Event deleted after success send. Event: {event}, Payload: {args}"
+                        )
+                    else:
+                        event.mark_as_sent()
+                        logger.info(
+                            f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {args}"
+                        )
+
+                    transaction.on_commit(
+                        lambda: event_published_by_events_relay.send(
+                            sender=original_fn, event_payload=event_payload
+                        )
                     )
-            except BadSignature as exception:
-                logger.warning(
-                    f"JAIMINHO-EVENTS-RELAY: Event has been tampered, Event: {event}"
-                )
-                _capture_exception(exception)
+                except BadSignature as exception:
+                    logger.warning(
+                        f"JAIMINHO-EVENTS-RELAY: Event has been tampered, Event: {event}"
+                    )
+                    _capture_exception(exception)
 
-                if self.__stuck_on_error(event):
-                    self.__warn_stuck_on_error(event)
-                    return
+                    if self.__stuck_on_error(event):
+                        self.__warn_stuck_on_error(event)
+                        return
 
-            except (ModuleNotFoundError, AttributeError) as e:
-                logger.warning(
-                    f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}"
-                )
-                _capture_exception(e)
+                except (ModuleNotFoundError, AttributeError) as e:
+                    logger.warning(
+                        f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}"
+                    )
+                    _capture_exception(e)
 
-                if self.__stuck_on_error(event):
-                    self.__warn_stuck_on_error(event)
-                    return
+                    if self.__stuck_on_error(event):
+                        self.__warn_stuck_on_error(event)
+                        return
 
-            except BaseException as e:
-                logger.warning(
-                    f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}"
-                )
-                original_fn = _extract_original_func(event)
-                event_failed_to_publish_by_events_relay.send(
-                    sender=original_fn, event_payload=event_payload
-                )
-                _capture_exception(e)
+                except BaseException as e:
+                    logger.warning(
+                        f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}"
+                    )
+                    original_fn = _extract_original_func(event)
+                    transaction.on_commit(
+                        lambda: event_failed_to_publish_by_events_relay.send(
+                            sender=original_fn, event_payload=event_payload
+                        )
+                    )
+                    _capture_exception(e)
 
-                if self.__stuck_on_error(event):
-                    self.__warn_stuck_on_error(event)
-                    return
-            else:
-                event_published_by_events_relay.send(
-                    sender=original_fn, event_payload=event_payload
-                )
+                    if self.__stuck_on_error(event):
+                        self.__warn_stuck_on_error(event)
+                        return
 
     def __stuck_on_error(self, event):
         if not event.strategy:
