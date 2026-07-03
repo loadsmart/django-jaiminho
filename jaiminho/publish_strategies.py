@@ -107,8 +107,6 @@ def on_commit_hook(func, event, event_data, args, kwargs):
         )
         event_failed_to_publish.send(sender=func, event_payload=event_payload)
         return
-    else:
-        event_published.send(sender=func, event_payload=event_payload)
 
     if event:
         if settings.delete_after_send:
@@ -121,3 +119,5 @@ def on_commit_hook(func, event, event_data, args, kwargs):
                 f"JAIMINHO-ON-COMMIT-HOOK: Event marked as sent. Event: {event}, Payload: {args}"
             )
             event.mark_as_sent()
+
+    event_published.send(sender=func, event_payload=event_payload)
