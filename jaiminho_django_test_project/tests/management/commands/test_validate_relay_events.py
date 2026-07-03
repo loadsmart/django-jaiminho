@@ -19,12 +19,12 @@ from jaiminho_django_test_project.send import (
     notify,
     notify_without_decorator,
     notify_to_stream,
-    ExampleClass,
 )
 
 pytestmark = pytest.mark.django_db
 
 
+@pytest.mark.django_db(transaction=True)
 class TestValidateEventsRelay:
     @pytest.fixture
     def mock_log_metric(self, mocker):

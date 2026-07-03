@@ -2,7 +2,7 @@ import logging
 import dill
 
 from django.core.signing import BadSignature
-
+from django.db import transaction
 from jaiminho.constants import PublishStrategyType
 from jaiminho.models import Event
 from jaiminho.signals import (
@@ -29,6 +29,9 @@ def _extract_original_func(event):
 
 class EventRelayer:
     def relay(self, stream=None):
+        skip_locked_rows = (
+            settings.publish_strategy == PublishStrategyType.PUBLISH_ON_COMMIT
+        )
         events_qs = Event.objects.filter(sent_at__isnull=True)
         events_qs = events_qs.filter(stream=stream)
 
@@ -39,6 +42,11 @@ class EventRelayer:
             return
 
         for event in events_qs:
+            transaction.set_autocommit(False)
+
+            event = Event.objects.select_for_update(skip_locked=skip_locked_rows).get(
+                id=event.id
+            )
             event_payload = {}
 
             try:
@@ -65,7 +73,10 @@ class EventRelayer:
                     logger.info(
                         f"JAIMINHO-EVENTS-RELAY: Event marked as sent. Event: {event}, Payload: {args}"
                     )
+
+                transaction.commit()
             except BadSignature as exception:
+                transaction.rollback()
                 logger.warning(
                     f"JAIMINHO-EVENTS-RELAY: Event has been tampered, Event: {event}"
                 )
@@ -76,6 +87,7 @@ class EventRelayer:
                     return
 
             except (ModuleNotFoundError, AttributeError) as e:
+                transaction.rollback()
                 logger.warning(
                     f"JAIMINHO-EVENTS-RELAY: Function does not exist anymore, Event: {event} | Error: {str(e)}"
                 )
@@ -86,6 +98,7 @@ class EventRelayer:
                     return
 
             except BaseException as e:
+                transaction.commit()
                 logger.warning(
                     f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}"
                 )
@@ -99,6 +112,7 @@ class EventRelayer:
                     self.__warn_stuck_on_error(event)
                     return
             else:
+                transaction.commit()
                 event_published_by_events_relay.send(
                     sender=original_fn, event_payload=event_payload
                 )

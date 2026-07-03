@@ -23,7 +23,7 @@ def events_confirmation_folder():
         shutil.rmtree(EVENTS_FOLDER_PATH)
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 class TestSendToOutbox:
     def test_should_relay_when_keep_order_strategy_from_decorator(
         self, mocker, events_confirmation_folder
