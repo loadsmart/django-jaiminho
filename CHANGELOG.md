@@ -8,6 +8,8 @@ the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## [Unreleased]
 
+## [2.0.4] - 2026-07-09
+
 ## [2.0.3] - 2026-07-03
 
 ## [2.0.2] - 2026-06-22
@@ -39,7 +41,8 @@ the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## 0.0.0 - 2023-03-01
 
-[Unreleased]: https://github.com/loadsmart/django-jaiminho/compare/2.0.3...HEAD
+[Unreleased]: https://github.com/loadsmart/django-jaiminho/compare/2.0.4...HEAD
+[2.0.4]: https://github.com/loadsmart/django-jaiminho/compare/2.0.3...2.0.4
 [2.0.3]: https://github.com/loadsmart/django-jaiminho/compare/2.0.2...2.0.3
 [2.0.2]: https://github.com/loadsmart/django-jaiminho/compare/2.0.1...2.0.2
 [2.0.1]: https://github.com/loadsmart/django-jaiminho/compare/2.0.0...2.0.1
