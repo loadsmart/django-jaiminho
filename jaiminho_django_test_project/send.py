@@ -48,4 +48,21 @@ def notify_without_decorator(*args, **kwargs):
     internal_notify(*args, **kwargs)
 
 
+@save_to_outbox(using="secondary")
+def notify_using_secondary_db(*args, **kwargs):
+    internal_notify(*args, **kwargs)
+
+
+@save_to_outbox_stream(EXAMPLE_STREAM, using="secondary")
+def notify_to_stream_using_secondary_db(*args, **kwargs):
+    internal_notify(*args, **kwargs)
+
+
+@save_to_outbox_stream(
+    EXAMPLE_STREAM, PublishStrategyType.KEEP_ORDER, using="secondary"
+)
+def notify_keep_order_using_secondary_db(*args, **kwargs):
+    internal_notify(*args, **kwargs)
+
+
 __all__ = ("notify", "notify_without_decorator")

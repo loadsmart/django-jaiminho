@@ -28,12 +28,12 @@ def create_event_data(func, args, kwargs, strategy, stream=None):
 
 class BaseStrategy(ABC):
     @abstractmethod
-    def publish(self, args, kwargs, func, stream=None):
+    def publish(self, args, kwargs, func, stream=None, using=None):
         raise NotImplementedError
 
 
 class PublishOnCommitStrategy(BaseStrategy):
-    def publish(self, args, kwargs, func, stream=None):
+    def publish(self, args, kwargs, func, stream=None, using=None):
         event_data = create_event_data(
             func,
             args,
@@ -44,7 +44,7 @@ class PublishOnCommitStrategy(BaseStrategy):
 
         event = None
         if settings.persist_all_events:
-            event = Event.objects.create(**event_data)
+            event = Event.objects.using(using).create(**event_data)
             logger.info(
                 f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {args}"
             )
@@ -55,15 +55,18 @@ class PublishOnCommitStrategy(BaseStrategy):
             "event": event,
             "args": args,
             "kwargs": kwargs,
+            "using": using,
         }
-        transaction.on_commit(lambda: on_commit_hook(**on_commit_hook_kwargs))
+        transaction.on_commit(
+            lambda: on_commit_hook(**on_commit_hook_kwargs), using=using
+        )
         logger.info(
             f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}"
         )
 
 
 class KeepOrderStrategy(BaseStrategy):
-    def publish(self, args, kwargs, func, stream=None):
+    def publish(self, args, kwargs, func, stream=None, using=None):
         event_data = create_event_data(
             func,
             args,
@@ -71,7 +74,7 @@ class KeepOrderStrategy(BaseStrategy):
             PublishStrategyType.KEEP_ORDER,
             stream=stream,
         )
-        event = Event.objects.create(**event_data)
+        event = Event.objects.using(using).create(**event_data)
         logger.info(
             f"JAIMINHO-SAVE-TO-OUTBOX: Event created: Event {event}, Payload: {args}"
         )
@@ -89,7 +92,7 @@ def create_publish_strategy(strategy_type):
         raise ValueError(f"Unknow strategy type: {strategy_type}")
 
 
-def on_commit_hook(func, event, event_data, args, kwargs):
+def on_commit_hook(func, event, event_data, args, kwargs, using=None):
     event_payload = get_event_payload(args)
 
     try:
@@ -99,7 +102,7 @@ def on_commit_hook(func, event, event_data, args, kwargs):
         )
     except BaseException as exc:
         if not event:
-            event = Event.objects.create(**event_data)
+            event = Event.objects.using(using).create(**event_data)
 
         logger.warning(
             f"JAIMINHO-ON-COMMIT-HOOK: Event failed to be published. Event: {event}, Payload: {args}, "

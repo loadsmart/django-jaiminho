@@ -63,6 +63,19 @@ def any_external_call(**kwargs):
     return
 ```
 
+If your project writes to more than one database, pass the alias your decorated function's transaction runs on through the `using` argument, so the outbox event is persisted and the on-commit hook is bound to that same alias:
+
+```python
+from jaiminho.send import save_to_outbox
+
+@save_to_outbox(using="replica")
+def any_external_call(**kwargs):
+    # do something
+    return
+```
+
+`@save_to_outbox_stream` accepts the same `using` argument. When omitted, Jaiminho keeps its previous behavior of relying on Django's default database alias.
+
 ### 6 - Run the relay events command
 
 ```
