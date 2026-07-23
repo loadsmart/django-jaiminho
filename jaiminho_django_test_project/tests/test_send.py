@@ -927,3 +927,61 @@ class TestNofityWithStreamOverwritingStrategy:
         )
         assert Event.objects.all().count() == 1
         assert Event.objects.get().strategy == PublishStrategyType.KEEP_ORDER
+
+
+@pytest.mark.django_db(databases=["default", "secondary"])
+class TestNotifyUsingDatabaseAlias:
+    def test_publish_on_commit_persists_event_to_the_given_alias(
+        self, mock_internal_notify, mock_should_persist_all_events
+    ):
+        args = ({"action": "a"},)
+        with TestCase.captureOnCommitCallbacks(using="secondary", execute=True):
+            jaiminho_django_test_project.send.notify_using_secondary_db(*args)
+
+        assert Event.objects.using("secondary").count() == 1
+        assert Event.objects.using("default").count() == 0
+        mock_internal_notify.assert_called_once_with(*args)
+
+    def test_publish_on_commit_stream_persists_event_to_the_given_alias(
+        self, mock_internal_notify, mock_should_persist_all_events
+    ):
+        args = ({"action": "a"},)
+        with TestCase.captureOnCommitCallbacks(using="secondary", execute=True):
+            jaiminho_django_test_project.send.notify_to_stream_using_secondary_db(*args)
+
+        event = Event.objects.using("secondary").get()
+        assert event.stream == jaiminho_django_test_project.send.EXAMPLE_STREAM
+        assert Event.objects.using("default").count() == 0
+        mock_internal_notify.assert_called_once_with(*args)
+
+    def test_keep_order_persists_event_to_the_given_alias(self, mock_internal_notify):
+        args = ({"action": "a"},)
+        jaiminho_django_test_project.send.notify_keep_order_using_secondary_db(*args)
+
+        event = Event.objects.using("secondary").get()
+        assert event.strategy == PublishStrategyType.KEEP_ORDER
+        assert Event.objects.using("default").count() == 0
+
+    def test_on_commit_hook_failure_creates_event_on_the_given_alias(self, mocker):
+        mocker.patch(
+            "jaiminho_django_test_project.send.internal_notify",
+            autospec=True,
+            side_effect=Exception("boom"),
+        )
+
+        args = ({"action": "a"},)
+        with TestCase.captureOnCommitCallbacks(using="secondary", execute=True):
+            jaiminho_django_test_project.send.notify_using_secondary_db(*args)
+
+        assert Event.objects.using("secondary").count() == 1
+        assert Event.objects.using("default").count() == 0
+
+    def test_default_alias_is_unaffected_when_using_is_not_provided(
+        self, mock_internal_notify, mock_should_persist_all_events
+    ):
+        args = ({"action": "a"},)
+        with TestCase.captureOnCommitCallbacks(execute=True):
+            jaiminho_django_test_project.send.notify(*args)
+
+        assert Event.objects.using("default").count() == 1
+        assert Event.objects.using("secondary").count() == 0
