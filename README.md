@@ -90,6 +90,8 @@ If you don't use `--run-in-loop` option, the relay command will run only 1 time.
 
 Jaiminho `@save_to_outbox` decorator will **intercept** decorated function and **persist** it in a **database table** in the same **transaction** that is active in the decorated function context. The event relay **command**, is a **separated process** that fetches the rows from this table and execute the functions. When an outage happens, the event relay command will **keep retrying until it succeeds**. This way, **eventual consistency is ensured** by design.
 
+Some errors, however, are not transient: if the decorated function raises one of the exceptions configured through `NON_RETRYABLE_EXCEPTIONS` (`BadSignature`, `ModuleNotFoundError` and `AttributeError` by default), retrying is guaranteed to fail again in the exact same way. Jaiminho does not persist an event for these failures (or deletes it if it was already persisted), so a single permanently-failing event can no longer poison the outbox table or, under the **Keep Order** strategy, block every event queued behind it.
+
 ### Configuration options
 
 - `PUBLISH_STRATEGY` - Strategy used to publish events (publish-on-commit, keep-order)
@@ -98,6 +100,7 @@ Jaiminho `@save_to_outbox` decorator will **intercept** decorated function and *
 - `DEFAULT_ENCODER` - Default Encoder for the payload (overwritable in the function call)
 - `SIGN_EVENTS` - Signs events to support verification later
 - `VERIFY_EVENTS_SIGNATURE` - Verifies previously generated signatures
+- `NON_RETRYABLE_EXCEPTIONS` - Tuple of exception classes that are never retried: an event that fails with one of these is dropped instead of being persisted for retry. Defaults to `(BadSignature, ModuleNotFoundError, AttributeError)`. Setting this **replaces** the default tuple rather than extending it, so include those three as well if you still want them covered.
 
 ### Strategies
 

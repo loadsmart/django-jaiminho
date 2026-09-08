@@ -7,6 +7,8 @@ and this project adheres to [Calendar Versioning](https://calver.org/) following
 the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## [Unreleased]
+### Added
+- `NON_RETRYABLE_EXCEPTIONS` setting: events that fail with a configured exception (defaults to `BadSignature`, `ModuleNotFoundError`, `AttributeError`) are no longer retried forever - they're dropped instead of persisted, preventing a single permanently-failing event from poisoning the outbox or blocking the Keep Order relay. [CT-2898]
 
 ## [2.1.0] - 2026-08-27
 
