@@ -190,10 +190,14 @@ In the example above, `True` is the option for run_in_loop; `0.1` for loop_inter
 
 Jaiminho triggers the following Django signals:
 
-| Signal                  | Description                                                                     |
-|-------------------------|---------------------------------------------------------------------------------|
-| event_published         | Triggered when an event is sent successfully                                    |
-| event_failed_to_publish | Triggered when an event is not sent, being added to the Outbox table queue      |
+| Signal                                       | Description                                                                                                                     |
+|-----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| event_published                              | Triggered when an event is sent successfully                                                                                    |
+| event_failed_to_publish                      | Triggered when an event is not sent, being added to the Outbox table queue                                                      |
+| event_permanently_failed                     | Triggered by `@save_to_outbox`'s on-commit hook when the decorated function raises one of `NON_RETRYABLE_EXCEPTIONS`; the event is dropped (or deleted, if already persisted) instead of being retried |
+| event_permanently_failed_by_events_relay     | Triggered by the `events_relay` command when a relayed event fails with one of `NON_RETRYABLE_EXCEPTIONS`; the event is given up on instead of being retried |
+
+All of the signals above are sent with `sender` (the original decorated function, or `None` if it could not be resolved) and `event_payload` (the first positional argument passed to the decorated function, or `{}` if there wasn't one).
 
 
 ### How to collect metrics from Jaiminho?
