@@ -100,7 +100,15 @@ Some errors, however, are not transient: if the decorated function raises one of
 - `DEFAULT_ENCODER` - Default Encoder for the payload (overwritable in the function call)
 - `SIGN_EVENTS` - Signs events to support verification later
 - `VERIFY_EVENTS_SIGNATURE` - Verifies previously generated signatures
-- `NON_RETRYABLE_EXCEPTIONS` - Tuple of exception classes that are never retried: an event that fails with one of these is dropped instead of being persisted for retry. Defaults to `(BadSignature, ModuleNotFoundError, AttributeError)`. Setting this **replaces** the default tuple rather than extending it, so include those three as well if you still want them covered.
+- `NON_RETRYABLE_EXCEPTIONS` - Tuple of exception classes that are never retried: an event that fails with one of these is dropped instead of being persisted for retry. Defaults to `(BadSignature, ModuleNotFoundError, AttributeError)` (importable as `jaiminho.errors.DEFAULT_NON_RETRYABLE_EXCEPTIONS`). Setting this **replaces** the default tuple rather than extending it, so if you want the built-ins covered too, compose them explicitly:
+
+  ```python
+  from jaiminho.errors import DEFAULT_NON_RETRYABLE_EXCEPTIONS
+
+  JAIMINHO_CONFIG = {
+      "NON_RETRYABLE_EXCEPTIONS": DEFAULT_NON_RETRYABLE_EXCEPTIONS + (MyAppPermanentError,),
+  }
+  ```
 
 ### Strategies
 
@@ -224,7 +232,7 @@ Here's how to implement this:
 
 ```python
 from celery import Celery
-from jaiminho import save_to_outbox
+from jaiminho.send import save_to_outbox
 
 
 class CeleryWithJaiminho(Celery):
