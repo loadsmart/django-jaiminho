@@ -1,5 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
+from functools import partial
+
 import dill
 
 from django.db import transaction
@@ -64,7 +66,7 @@ class PublishOnCommitStrategy(BaseStrategy):
             "using": using,
         }
         transaction.on_commit(
-            lambda: on_commit_hook(**on_commit_hook_kwargs), using=using
+            partial(on_commit_hook, **on_commit_hook_kwargs), using=using
         )
         logger.info(
             f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}"

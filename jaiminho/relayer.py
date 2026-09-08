@@ -1,4 +1,6 @@
 import logging
+from functools import partial
+
 import dill
 
 from django.core.signing import BadSignature
@@ -85,8 +87,10 @@ class EventRelayer:
                         )
 
                     transaction.on_commit(
-                        lambda: event_published_by_events_relay.send(
-                            sender=original_fn, event_payload=event_payload
+                        partial(
+                            event_published_by_events_relay.send,
+                            sender=original_fn,
+                            event_payload=event_payload,
                         )
                     )
                 except BadSignature as exception:
@@ -126,8 +130,10 @@ class EventRelayer:
 
                     original_fn = _extract_original_func(event)
                     transaction.on_commit(
-                        lambda: event_failed_to_publish_by_events_relay.send(
-                            sender=original_fn, event_payload=event_payload
+                        partial(
+                            event_failed_to_publish_by_events_relay.send,
+                            sender=original_fn,
+                            event_payload=event_payload,
                         )
                     )
 
@@ -145,8 +151,10 @@ class EventRelayer:
             original_fn = None
 
         transaction.on_commit(
-            lambda: event_permanently_failed_by_events_relay.send(
-                sender=original_fn, event_payload=event_payload
+            partial(
+                event_permanently_failed_by_events_relay.send,
+                sender=original_fn,
+                event_payload=event_payload,
             )
         )
         logger.warning(
