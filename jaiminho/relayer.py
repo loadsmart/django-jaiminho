@@ -145,6 +145,11 @@ class EventRelayer:
         if not is_non_retryable(exception):
             return False
 
+        if self.__stuck_on_error(event):
+            # Keep Order guarantees delivery order, so we can't skip a permanently
+            # failing event without risking later events being delivered out of order.
+            return False
+
         try:
             original_fn = _extract_original_func(event)
         except BaseException:

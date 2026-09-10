@@ -90,7 +90,7 @@ If you don't use `--run-in-loop` option, the relay command will run only 1 time.
 
 Jaiminho `@save_to_outbox` decorator will **intercept** decorated function and **persist** it in a **database table** in the same **transaction** that is active in the decorated function context. The event relay **command**, is a **separated process** that fetches the rows from this table and execute the functions. When an outage happens, the event relay command will **keep retrying until it succeeds**. This way, **eventual consistency is ensured** by design.
 
-Some errors, however, are not transient: if the decorated function raises one of the exceptions configured through `NON_RETRYABLE_EXCEPTIONS` (`BadSignature`, `ModuleNotFoundError` and `AttributeError` by default), retrying is guaranteed to fail again in the exact same way. Jaiminho does not persist an event for these failures (or deletes it if it was already persisted), so a single permanently-failing event can no longer poison the outbox table or, under the **Keep Order** strategy, block every event queued behind it.
+Some errors, however, are not transient: if the decorated function raises one of the exceptions configured through `NON_RETRYABLE_EXCEPTIONS` (`BadSignature`, `ModuleNotFoundError` and `AttributeError` by default), retrying is guaranteed to fail again in the exact same way. Under the **Publish on Commit** strategy, Jaiminho does not persist an event for these failures (or deletes it if it was already persisted), so a single permanently-failing event can no longer poison the outbox table. Under the **Keep Order** strategy this behavior does not apply: dropping an event would break delivery order for whatever is queued behind it, so a non-retryable failure still gets the relayer stuck, same as any other failure.
 
 ### Configuration options
 
@@ -100,13 +100,13 @@ Some errors, however, are not transient: if the decorated function raises one of
 - `DEFAULT_ENCODER` - Default Encoder for the payload (overwritable in the function call)
 - `SIGN_EVENTS` - Signs events to support verification later
 - `VERIFY_EVENTS_SIGNATURE` - Verifies previously generated signatures
-- `NON_RETRYABLE_EXCEPTIONS` - Tuple of exception classes that are never retried: an event that fails with one of these is dropped instead of being persisted for retry. Defaults to `(BadSignature, ModuleNotFoundError, AttributeError)`. Setting this **replaces** the default tuple rather than extending it, so include those three as well if you still want them covered.
+- `NON_RETRYABLE_EXCEPTIONS` - Tuple of exception classes that are never retried: an event that fails with one of these is dropped instead of being persisted for retry. Only applies to the `publish-on-commit` strategy; under `keep-order` these failures still get the relayer stuck, to preserve delivery order. Defaults to `(BadSignature, ModuleNotFoundError, AttributeError)`. Setting this **replaces** the default tuple rather than extending it, so include those three as well if you still want them covered.
 
 ### Strategies
 
 #### Keep Order
 This strategy is similar to transactional outbox [described by Chris Richardson](https://microservices.io/patterns/data/transactional-outbox.html). The decorated function intercepts the function call and saves it on the local DB to be executed later. A separate command relayer will keep polling local DB and executing those functions in the same order it was stored. 
-Be carefully with this approach, **if any execution fails, the relayer will get stuck** as it would not be possible to guarantee delivery order.  
+Be carefully with this approach, **if any execution fails, the relayer will get stuck** as it would not be possible to guarantee delivery order. This includes failures configured as `NON_RETRYABLE_EXCEPTIONS` - they are not dropped under this strategy, precisely because doing so would break the order guarantee.
 
 #### Publish on commit
 
@@ -195,7 +195,7 @@ Jaiminho triggers the following Django signals:
 | event_published                              | Triggered when an event is sent successfully                                                                                    |
 | event_failed_to_publish                      | Triggered when an event is not sent, being added to the Outbox table queue                                                      |
 | event_permanently_failed                     | Triggered by `@save_to_outbox`'s on-commit hook when the decorated function raises one of `NON_RETRYABLE_EXCEPTIONS`; the event is dropped (or deleted, if already persisted) instead of being retried |
-| event_permanently_failed_by_events_relay     | Triggered by the `events_relay` command when a relayed event fails with one of `NON_RETRYABLE_EXCEPTIONS`; the event is given up on instead of being retried |
+| event_permanently_failed_by_events_relay     | Triggered by the `events_relay` command when a relayed event fails with one of `NON_RETRYABLE_EXCEPTIONS`; the event is given up on instead of being retried. Only fires for events using the `publish-on-commit` strategy - under `keep-order` the relayer gets stuck instead |
 
 All of the signals above are sent with `sender` (the original decorated function, or `None` if it could not be resolved) and `event_payload` (the first positional argument passed to the decorated function, or `{}` if there wasn't one).
 
