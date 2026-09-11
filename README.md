@@ -102,6 +102,13 @@ Some errors, however, are not transient: if the decorated function raises one of
 - `VERIFY_EVENTS_SIGNATURE` - Verifies previously generated signatures
 - `NON_RETRYABLE_EXCEPTIONS` - Tuple of exception classes that are never retried: an event that fails with one of these is dropped instead of being persisted for retry. Only applies to the `publish-on-commit` strategy; under `keep-order` these failures still get the relayer stuck, to preserve delivery order. Defaults to `(BadSignature, ModuleNotFoundError, AttributeError)`. Setting this **replaces** the default tuple rather than extending it, so include those three as well if you still want them covered.
 
+#### Non-retryable exceptions in detail
+
+- **`BadSignature`** - stored signature doesn't match the payload (`VERIFY_EVENTS_SIGNATURE`). Usually tampering, or signing config (`SECRET_KEY`, `SIGN_EVENTS`) changed after the event was persisted.
+- **`ModuleNotFoundError`** / **`AttributeError`** - the outbox stores a `dill` reference to the decorated function's module path, not its source. The relay re-imports that path when it runs. If the function's module is later moved/renamed (`ModuleNotFoundError`) or the function itself is renamed/removed (`AttributeError`), any event already persisted under the old code will fail to deserialize.
+
+**Risk:** deploying such a move/rename while events are still waiting to be relayed can lose them - they're dropped as non-retryable instead of retried. Only affects `publish-on-commit` (in-flight events); `keep-order` never drops non-retryable failures, it just gets stuck. Low-probability but real; mitigate by draining the outbox before the deploy, or excluding these two from `NON_RETRYABLE_EXCEPTIONS` for it.
+
 ### Strategies
 
 #### Keep Order
