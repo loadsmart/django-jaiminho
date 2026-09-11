@@ -1,12 +1,20 @@
 import logging
 from abc import ABC, abstractmethod
+from functools import partial
+
 import dill
 
 from django.db import transaction
 
 from jaiminho.constants import PublishStrategyType
+from jaiminho.errors import is_non_retryable
 from jaiminho.models import Event
-from jaiminho.signals import event_published, event_failed_to_publish, get_event_payload
+from jaiminho.signals import (
+    event_published,
+    event_failed_to_publish,
+    event_permanently_failed,
+    get_event_payload,
+)
 from jaiminho import settings
 
 logger = logging.getLogger(__name__)
@@ -58,7 +66,7 @@ class PublishOnCommitStrategy(BaseStrategy):
             "using": using,
         }
         transaction.on_commit(
-            lambda: on_commit_hook(**on_commit_hook_kwargs), using=using
+            partial(on_commit_hook, **on_commit_hook_kwargs), using=using
         )
         logger.info(
             f"JAIMINHO-SAVE-TO-OUTBOX: On commit hook configured. Event: {event}"
@@ -101,6 +109,17 @@ def on_commit_hook(func, event, event_data, args, kwargs, using=None):
             f"JAIMINHO-ON-COMMIT-HOOK: Event sent successfully. Payload: {args}"
         )
     except BaseException as exc:
+        if is_non_retryable(exc):
+            if event:
+                event.delete()
+
+            logger.warning(
+                f"JAIMINHO-ON-COMMIT-HOOK: Non-retryable error, event will not be retried. Payload: {args}, "
+                f"Exception: {exc}"
+            )
+            event_permanently_failed.send(sender=func, event_payload=event_payload)
+            return
+
         if not event:
             event = Event.objects.using(using).create(**event_data)
 
