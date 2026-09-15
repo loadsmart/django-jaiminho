@@ -331,12 +331,9 @@ class TestNotify:
         "exception",
         (
             AssertionError,
-            ModuleNotFoundError,
-            AttributeError,
             Exception,
             SystemError,
             SystemExit,
-            BadSignature,
         ),
     )
     def test_send_fail_handles_multiple_exceptions_type(
@@ -362,6 +359,75 @@ class TestNotify:
             args[0],
         )
         assert len(callbacks) == 1
+        assert Event.objects.all().count() == 1
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
+    @pytest.mark.parametrize(
+        "exception",
+        (
+            ModuleNotFoundError,
+            AttributeError,
+            BadSignature,
+        ),
+    )
+    def test_send_fail_handles_non_retryable_exceptions_type(
+        self,
+        mock_log_metric,
+        mock_internal_notify_fail,
+        exception,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        mock_internal_notify_fail.side_effect = exception
+
+        args = ({"action": "a", "type": "t", "c": "d"},)
+        with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
+            jaiminho_django_test_project.send.notify(*args)
+
+        mock_internal_notify_fail.assert_called_once_with(*args)
+
+        mock_log_metric.assert_called_once_with(
+            "event-permanently-failed",
+            args[0],
+        )
+        assert len(callbacks) == 1
+        assert Event.objects.all().count() == 0
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
+    def test_send_fail_handles_app_configured_non_retryable_exception(
+        self,
+        mock_log_metric,
+        mock_internal_notify_fail,
+        publish_strategy,
+        mocker,
+    ):
+        class AppSpecificPermanentError(Exception):
+            pass
+
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mocker.patch(
+            "jaiminho.settings.non_retryable_exceptions", (AppSpecificPermanentError,)
+        )
+        mock_internal_notify_fail.side_effect = AppSpecificPermanentError
+
+        args = ({"action": "a", "type": "t", "c": "d"},)
+        with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
+            jaiminho_django_test_project.send.notify(*args)
+
+        mock_internal_notify_fail.assert_called_once_with(*args)
+
+        mock_log_metric.assert_called_once_with(
+            "event-permanently-failed",
+            args[0],
+        )
+        assert len(callbacks) == 1
+        assert Event.objects.all().count() == 0
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
@@ -743,7 +809,7 @@ class TestNotifyWithStream:
     )
     @pytest.mark.parametrize(
         "exception",
-        (AssertionError, AttributeError, Exception, SystemError, SystemExit),
+        (AssertionError, Exception, SystemError, SystemExit),
     )
     def test_send_to_stream_fail_handles_multiple_exceptions_type(
         self,
@@ -768,6 +834,39 @@ class TestNotifyWithStream:
             args[0],
         )
         assert len(callbacks) == 1
+        assert Event.objects.all().count() == 1
+
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
+    @pytest.mark.parametrize(
+        "exception",
+        (ModuleNotFoundError, AttributeError, BadSignature),
+    )
+    def test_send_to_stream_fail_handles_non_retryable_exceptions_type(
+        self,
+        mock_log_metric,
+        mock_internal_notify_fail,
+        exception,
+        publish_strategy,
+        mocker,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+
+        mock_internal_notify_fail.side_effect = exception
+
+        args = ({"action": "a", "type": "t", "c": "d"},)
+        with TestCase.captureOnCommitCallbacks(execute=True) as callbacks:
+            jaiminho_django_test_project.send.notify_to_stream(*args)
+
+        mock_internal_notify_fail.assert_called_once_with(*args)
+
+        mock_log_metric.assert_called_once_with(
+            "event-permanently-failed",
+            args[0],
+        )
+        assert len(callbacks) == 1
+        assert Event.objects.all().count() == 0
 
     @pytest.mark.parametrize(
         "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)

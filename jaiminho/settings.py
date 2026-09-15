@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
 from jaiminho.constants import PublishStrategyType
+from jaiminho.errors import DEFAULT_NON_RETRYABLE_EXCEPTIONS
 
 try:
     jaiminho_settings = getattr(settings, "JAIMINHO_CONFIG")
@@ -21,3 +22,6 @@ default_capture_exception = jaiminho_settings.get(
 )
 sign_events = jaiminho_settings.get("SIGN_EVENTS", True)
 verify_events_signature = jaiminho_settings.get("VERIFY_EVENTS_SIGNATURE", True)
+non_retryable_exceptions = tuple(
+    jaiminho_settings.get("NON_RETRYABLE_EXCEPTIONS", DEFAULT_NON_RETRYABLE_EXCEPTIONS)
+)

@@ -642,6 +642,84 @@ class TestValidateEventsRelay:
         mock_internal_notify_fail.assert_has_calls([call_1, call_2], any_order=True)
         assert "Events relaying are stuck due to failing Event" not in caplog.text
 
+    @pytest.mark.parametrize(
+        "publish_strategy", (PublishStrategyType.PUBLISH_ON_COMMIT,)
+    )
+    def test_relay_not_stuck_when_one_fail_with_non_retryable_error(
+        self,
+        mock_internal_notify,
+        publish_strategy,
+        mocker,
+        caplog,
+        django_capture_on_commit_callbacks,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mock_event_permanently_failed_signal = mocker.patch(
+            "jaiminho.relayer.event_permanently_failed_by_events_relay.send",
+            autospec=True,
+        )
+
+        args2 = ({"b": 2},)
+        event_1 = EventFactory(
+            function=dill.dumps(notify),
+            message=dill.dumps(({"b": 1},)),
+            strategy=publish_strategy,
+        )
+        Event.objects.filter(id=event_1.id).update(message=b"")
+        event_2 = EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            strategy=publish_strategy,
+            message=dill.dumps(args2),
+        )
+
+        with django_capture_on_commit_callbacks(execute=True):
+            call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_called_once_with(
+            args2[0],
+            encoder=DjangoJSONEncoder,
+            a="2",
+        )
+        assert "Events relaying are stuck due to failing Event" not in caplog.text
+        assert Event.objects.filter(id=event_1.id).count() == 0
+        mock_event_permanently_failed_signal.assert_called_once()
+
+    @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
+    def test_relay_stuck_when_one_fail_with_non_retryable_error(
+        self,
+        mock_internal_notify,
+        publish_strategy,
+        mocker,
+        caplog,
+    ):
+        mocker.patch("jaiminho.settings.publish_strategy", publish_strategy)
+        mock_event_permanently_failed_signal = mocker.patch(
+            "jaiminho.relayer.event_permanently_failed_by_events_relay.send",
+            autospec=True,
+        )
+
+        args2 = ({"b": 2},)
+        event_1 = EventFactory(
+            function=dill.dumps(notify),
+            message=dill.dumps(({"b": 1},)),
+            strategy=publish_strategy,
+        )
+        Event.objects.filter(id=event_1.id).update(message=b"")
+        EventFactory(
+            function=dill.dumps(notify),
+            kwargs=dill.dumps({"encoder": DjangoJSONEncoder, "a": "2"}),
+            strategy=publish_strategy,
+            message=dill.dumps(args2),
+        )
+
+        call_command(validate_events_relay.Command())
+
+        mock_internal_notify.assert_not_called()
+        assert "Events relaying are stuck due to failing Event" in caplog.text
+        assert Event.objects.filter(id=event_1.id).count() == 1
+        mock_event_permanently_failed_signal.assert_not_called()
+
     @pytest.mark.parametrize("publish_strategy", (PublishStrategyType.KEEP_ORDER,))
     def test_relay_stuck_when_one_fail_and_specific_stream(
         self,
@@ -794,6 +872,11 @@ class TestValidateEventsRelay:
         assert "No module named 'jaiminho_django_test_project.send2'" == str(
             capture_exception_call
         )
+        if publish_strategy == PublishStrategyType.KEEP_ORDER:
+            assert Event.objects.count() == 1
+            assert "Events relaying are stuck due to failing Event" in caplog.text
+        else:
+            assert Event.objects.count() == 0
 
     @pytest.mark.parametrize(
         "publish_strategy",
@@ -817,6 +900,11 @@ class TestValidateEventsRelay:
         assert "Event has been tampered" in caplog.text
         capture_exception_call = mock_capture_exception_fn.call_args[0][0]
         assert f"Event(id={event.id}) has been tampered" == str(capture_exception_call)
+        if publish_strategy == PublishStrategyType.KEEP_ORDER:
+            assert Event.objects.count() == 1
+            assert "Events relaying are stuck due to failing Event" in caplog.text
+        else:
+            assert Event.objects.count() == 0
 
     @pytest.mark.parametrize(
         "publish_strategy",
@@ -836,6 +924,11 @@ class TestValidateEventsRelay:
 
         assert "Function does not exist anymore" in caplog.text
         assert "Can't get attribute 'never_existed' on" in caplog.text
+        if publish_strategy == PublishStrategyType.KEEP_ORDER:
+            assert Event.objects.count() == 1
+            assert "Events relaying are stuck due to failing Event" in caplog.text
+        else:
+            assert Event.objects.count() == 0
 
     @pytest.mark.parametrize(
         "publish_strategy",

@@ -1,14 +1,18 @@
 import logging
+from functools import partial
+
 import dill
 
 from django.core.signing import BadSignature
 from django.db import transaction
 
 from jaiminho.constants import PublishStrategyType
+from jaiminho.errors import is_non_retryable
 from jaiminho.models import Event
 from jaiminho.signals import (
     event_published_by_events_relay,
     event_failed_to_publish_by_events_relay,
+    event_permanently_failed_by_events_relay,
     get_event_payload,
 )
 from jaiminho import settings
@@ -83,8 +87,10 @@ class EventRelayer:
                         )
 
                     transaction.on_commit(
-                        lambda: event_published_by_events_relay.send(
-                            sender=original_fn, event_payload=event_payload
+                        partial(
+                            event_published_by_events_relay.send,
+                            sender=original_fn,
+                            event_payload=event_payload,
                         )
                     )
                 except BadSignature as exception:
@@ -92,6 +98,9 @@ class EventRelayer:
                         f"JAIMINHO-EVENTS-RELAY: Event has been tampered, Event: {event}"
                     )
                     _capture_exception(exception)
+
+                    if self.__give_up_on_non_retryable(event, exception, event_payload):
+                        continue
 
                     if self.__stuck_on_error(event):
                         self.__warn_stuck_on_error(event)
@@ -103,6 +112,9 @@ class EventRelayer:
                     )
                     _capture_exception(e)
 
+                    if self.__give_up_on_non_retryable(event, e, event_payload):
+                        continue
+
                     if self.__stuck_on_error(event):
                         self.__warn_stuck_on_error(event)
                         return
@@ -111,17 +123,50 @@ class EventRelayer:
                     logger.warning(
                         f"JAIMINHO-EVENTS-RELAY: An error occurred when relaying event: {event} | Error: {str(e)}"
                     )
+                    _capture_exception(e)
+
+                    if self.__give_up_on_non_retryable(event, e, event_payload):
+                        continue
+
                     original_fn = _extract_original_func(event)
                     transaction.on_commit(
-                        lambda: event_failed_to_publish_by_events_relay.send(
-                            sender=original_fn, event_payload=event_payload
+                        partial(
+                            event_failed_to_publish_by_events_relay.send,
+                            sender=original_fn,
+                            event_payload=event_payload,
                         )
                     )
-                    _capture_exception(e)
 
                     if self.__stuck_on_error(event):
                         self.__warn_stuck_on_error(event)
                         return
+
+    def __give_up_on_non_retryable(self, event, exception, event_payload):
+        if not is_non_retryable(exception):
+            return False
+
+        if self.__stuck_on_error(event):
+            # Keep Order guarantees delivery order, so we can't skip a permanently
+            # failing event without risking later events being delivered out of order.
+            return False
+
+        try:
+            original_fn = _extract_original_func(event)
+        except BaseException:
+            original_fn = None
+
+        transaction.on_commit(
+            partial(
+                event_permanently_failed_by_events_relay.send,
+                sender=original_fn,
+                event_payload=event_payload,
+            )
+        )
+        logger.warning(
+            f"JAIMINHO-EVENTS-RELAY: Non-retryable error, event will not be retried. Event: {event}"
+        )
+        event.delete()
+        return True
 
     def __stuck_on_error(self, event):
         if not event.strategy:
