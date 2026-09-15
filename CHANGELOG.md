@@ -7,6 +7,8 @@ and this project adheres to [Calendar Versioning](https://calver.org/) following
 the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## [Unreleased]
+
+## [2.2.0] - 2026-09-15
 ### Added
 - `NON_RETRYABLE_EXCEPTIONS` setting: events that fail with a configured exception (defaults to `BadSignature`, `ModuleNotFoundError`, `AttributeError`) are no longer retried forever under the Publish on Commit strategy - they're dropped instead of persisted, preventing a single permanently-failing event from poisoning the outbox. Keep Order is unaffected: it still gets stuck on these failures to preserve delivery order. [CT-2898]
 
@@ -45,7 +47,8 @@ the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## 0.0.0 - 2023-03-01
 
-[Unreleased]: https://github.com/loadsmart/django-jaiminho/compare/2.1.0...HEAD
+[Unreleased]: https://github.com/loadsmart/django-jaiminho/compare/2.2.0...HEAD
+[2.2.0]: https://github.com/loadsmart/django-jaiminho/compare/2.1.0...2.2.0
 [2.1.0]: https://github.com/loadsmart/django-jaiminho/compare/2.0.4...2.1.0
 [2.0.4]: https://github.com/loadsmart/django-jaiminho/compare/2.0.3...2.0.4
 [2.0.3]: https://github.com/loadsmart/django-jaiminho/compare/2.0.2...2.0.3
