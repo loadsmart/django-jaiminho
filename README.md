@@ -109,6 +109,17 @@ Some errors, however, are not transient: if the decorated function raises one of
 
 **Risk:** deploying such a move/rename while events are still waiting to be relayed can lose them - they're dropped as non-retryable instead of retried. Only affects `publish-on-commit` (in-flight events); `keep-order` never drops non-retryable failures, it just gets stuck. Low-probability but real; mitigate by draining the outbox before the deploy, or excluding these two from `NON_RETRYABLE_EXCEPTIONS` for it.
 
+#### Configuring it
+
+```python
+from jaiminho.errors import DEFAULT_NON_RETRYABLE_EXCEPTIONS
+
+JAIMINHO_CONFIG = {
+    # replaces the defaults, so re-include them to keep them covered
+    "NON_RETRYABLE_EXCEPTIONS": DEFAULT_NON_RETRYABLE_EXCEPTIONS + (MyPermanentError,),
+}
+```
+
 ### Strategies
 
 #### Keep Order
