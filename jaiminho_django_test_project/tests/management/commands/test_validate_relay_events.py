@@ -923,7 +923,7 @@ class TestValidateEventsRelay:
         call_command(validate_events_relay.Command())
 
         assert "Function does not exist anymore" in caplog.text
-        assert "Can't get attribute 'never_existed' on" in caplog.text
+        assert "'never_existed'" in caplog.text
         if publish_strategy == PublishStrategyType.KEEP_ORDER:
             assert Event.objects.count() == 1
             assert "Events relaying are stuck due to failing Event" in caplog.text

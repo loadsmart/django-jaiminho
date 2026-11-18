@@ -66,6 +66,28 @@ jobs:
           command: tox -e py312
       - store_test_results:
           path: build
+  tests313:
+    working_directory: /home/circleci/project
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py313
+      - store_test_results:
+          path: build
+  tests314:
+    working_directory: /home/circleci/project
+    docker:
+      - image: cimg/python:3.14
+    steps:
+      - checkout
+      - install-dependencies
+      - run:
+          command: tox -e py314
+      - store_test_results:
+          path: build
   release:
     working_directory: /home/circleci/project
     docker:
@@ -108,6 +130,16 @@ workflows:
           filters:
             tags:
               only: /^\d+\.\d+\.\d+$/
+      - tests313:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - tests314:
+          context: org-global
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - release:
           name: release
           context: org-global
@@ -117,6 +149,8 @@ workflows:
             - tests310
             - tests311
             - tests312
+            - tests313
+            - tests314
           filters:
             branches:
               ignore: /.*/
