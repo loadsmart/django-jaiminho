@@ -7,6 +7,8 @@ and this project adheres to [Calendar Versioning](https://calver.org/) following
 the schema `YYYY.MM.DD.N` been `N` the number of the release of the day.
 
 ## [Unreleased]
+### Added
+- Python 3.13 and 3.14 support.
 
 ## [2.2.1] - 2026-09-16
 
